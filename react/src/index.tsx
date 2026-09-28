@@ -33,7 +33,6 @@ export function TanoVerification(props: TanoVerificationProps) {
   latest.current = props;
 
   // Le cadre se remonte quand le lien change, et seulement alors : le reste est lu via `latest`.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: les rappels et réglages sont lus à jour.
   useEffect(() => {
     if (host.current === null) return;
     const { onExpired, minHeight, title } = latest.current;
