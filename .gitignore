@@ -9,3 +9,7 @@ __pycache__/
 ios/.build/
 ios/Example/build/
 .swiftpm/
+android/.gradle/
+android/**/build/
+android/local.properties
+android/.idea/
