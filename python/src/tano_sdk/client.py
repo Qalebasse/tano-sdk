@@ -118,6 +118,22 @@ class Tano:
         idempotency_key: str | None = None,
     ) -> Any:
         """Une requête brute, pour une route que le SDK n'expose pas encore."""
+        response = self._send(method, path, body, query=query, idempotency_key=idempotency_key)
+        return _json(response.body)
+
+    def request_bytes(self, path: str) -> HttpResponse:
+        """Une lecture binaire (une image) : la réponse telle quelle, `Content-Type` compris."""
+        return self._send("GET", path, None)
+
+    def _send(
+        self,
+        method: str,
+        path: str,
+        body: Mapping[str, Any] | None,
+        *,
+        query: Query | None = None,
+        idempotency_key: str | None = None,
+    ) -> HttpResponse:
         target = path + _query_string(query)
         payload = b"" if body is None else json.dumps(body, separators=(",", ":")).encode()
         key = None if method == "GET" else (idempotency_key or str(uuid.uuid4()))
@@ -164,15 +180,15 @@ class Tano:
                 time.sleep(_retry_after(response) or _backoff(attempt))
                 attempt += 1
                 continue
-            data = _json(response.body)
             if response.status >= 400:
+                data = _json(response.body)
                 error_body = data.get("error") if isinstance(data, dict) else None
                 raise TanoApiError(
                     response.status,
                     error_body if isinstance(error_body, dict) else {},
                     _header(response.headers, "X-Request-Id"),
                 )
-            return data
+            return response
 
 
 class Cases:
@@ -203,10 +219,35 @@ class Cases:
             "GET", f"/v1/cases/{quote(case_id, safe='')}"
         )
 
+    def results(self, case_id: str) -> dict[str, Any]:
+        """Tout ce qui fonde la décision, sans donnée personnelle : `state` en un mot
+        (`approved`, `rejected`, `resubmission_requested`…), la décision, la reprise demandée,
+        le compte rendu de chaque contrôle, les pièces reçues."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "GET", f"/v1/cases/{quote(case_id, safe='')}/results"
+        )
+
+    def data(self, case_id: str) -> dict[str, Any]:
+        """Les données personnelles du dossier. Clé avec la permission `personal_data` ; la
+        lecture est inscrite au journal des consultations du dossier."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "GET", f"/v1/cases/{quote(case_id, safe='')}/data"
+        )
+
+    def image(self, case_id: str, piece_id: str) -> tuple[str, bytes]:
+        """Une image du dossier (`pieces[].id` des résultats) : son type et ses octets.
+        Permission `personal_data`."""
+        response = self._client.request_bytes(
+            f"/v1/cases/{quote(case_id, safe='')}/images/{quote(piece_id, safe='')}"
+        )
+        kind = _header(response.headers, "Content-Type") or "application/octet-stream"
+        return kind, response.body
+
     def list(
         self,
         *,
         q: str | None = None,
+        external_ref: str | None = None,
         status: str | Iterable[str] | None = None,
         country: str | Iterable[str] | None = None,
         created_after: str | datetime | None = None,
@@ -220,6 +261,7 @@ class Cases:
             "/v1/cases",
             query={
                 "q": q,
+                "external_ref": external_ref,
                 "status": _as_list(status),
                 "country": _as_list(country),
                 "created_after": _as_date(created_after),

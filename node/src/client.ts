@@ -5,7 +5,10 @@ import { parseKey, requestSignature } from "./signature.js";
 import type {
   Case,
   CaseCreateParams,
+  CaseData,
+  CaseImage,
   CaseListParams,
+  CaseResults,
   JourneySession,
   Page,
   RequestOptions,
@@ -88,6 +91,14 @@ export class Tano {
     return timestamp;
   }
 
+  /** Une lecture binaire (une image). Mêmes réessais et mêmes erreurs que `request`. */
+  async requestBytes(path: string, options: RequestOptions = {}): Promise<CaseImage> {
+    return this.#send("GET", path, "", undefined, options, async (response) => ({
+      contentType: response.headers.get("content-type") ?? "application/octet-stream",
+      data: Buffer.from(await response.arrayBuffer()),
+    }));
+  }
+
   /** Une requête brute, pour une route que le SDK n'expose pas encore. */
   async request<T>(
     method: "GET" | "POST" | "PATCH" | "DELETE",
@@ -95,8 +106,28 @@ export class Tano {
     body?: unknown,
     options: RequestOptions & { query?: Query } = {},
   ): Promise<T> {
-    const target = path + queryString(options.query);
     const payload = body === undefined ? "" : JSON.stringify(body);
+    return this.#send(
+      method,
+      path + queryString(options.query),
+      payload,
+      body,
+      options,
+      async (response) => {
+        const text = await response.text();
+        return (text === "" ? {} : safeJson(text)) as T;
+      },
+    );
+  }
+
+  async #send<T>(
+    method: "GET" | "POST" | "PATCH" | "DELETE",
+    target: string,
+    payload: string,
+    body: unknown,
+    options: RequestOptions,
+    read: (response: Response) => Promise<T>,
+  ): Promise<T> {
     const idempotencyKey = method === "GET" ? undefined : (options.idempotencyKey ?? randomUUID());
 
     for (let attempt = 0; ; attempt += 1) {
@@ -125,7 +156,7 @@ export class Tano {
         response = await this.#fetch(this.#baseUrl + target, {
           method,
           headers,
-          ...(method === "GET" ? {} : { body: payload }),
+          ...(method === "GET" || body === undefined ? {} : { body: payload }),
           signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
         });
       } catch (error) {
@@ -144,13 +175,13 @@ export class Tano {
         await pause(retryAfter(response) ?? backoff(attempt));
         continue;
       }
-      const text = await response.text();
-      const json: unknown = text === "" ? {} : safeJson(text);
       if (!response.ok) {
+        const text = await response.text();
+        const json: unknown = text === "" ? {} : safeJson(text);
         const error = (json as { error?: ApiErrorBody } | null)?.error ?? {};
         throw new TanoApiError(response.status, error, response.headers.get("x-request-id"));
       }
-      return json as T;
+      return read(response);
     }
   }
 }
@@ -167,12 +198,43 @@ class Cases {
     return this.client.request("GET", `/v1/cases/${encodeURIComponent(id)}`, undefined, options);
   }
 
+  /** Tout ce qui fonde la décision, sans donnée personnelle : l'état en un mot, la décision, la
+   * reprise demandée, le compte rendu de chaque contrôle, les pièces reçues. */
+  results(id: string, options?: RequestOptions): Promise<CaseResults> {
+    return this.client.request(
+      "GET",
+      `/v1/cases/${encodeURIComponent(id)}/results`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Les données personnelles du dossier. Clé avec la permission `personal_data` ; la lecture est
+   * inscrite au journal des consultations du dossier. */
+  data(id: string, options?: RequestOptions): Promise<CaseData> {
+    return this.client.request(
+      "GET",
+      `/v1/cases/${encodeURIComponent(id)}/data`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Une image du dossier (`pieces[].id` des résultats). Permission `personal_data`. */
+  image(id: string, pieceId: string, options?: RequestOptions): Promise<CaseImage> {
+    return this.client.requestBytes(
+      `/v1/cases/${encodeURIComponent(id)}/images/${encodeURIComponent(pieceId)}`,
+      options,
+    );
+  }
+
   /** Une page de dossiers, du plus récent au plus ancien. */
   list(params: CaseListParams = {}, options?: RequestOptions): Promise<Page<Case>> {
     return this.client.request("GET", "/v1/cases", undefined, {
       ...options,
       query: {
         q: params.q,
+        external_ref: params.external_ref,
         status: asList(params.status),
         country: asList(params.country),
         created_after: asDate(params.created_after),
