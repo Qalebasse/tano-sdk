@@ -80,12 +80,91 @@ export interface CaseCreateParams {
 
 export interface CaseListParams {
   q?: string;
+  /** Votre référence, exacte. */
+  external_ref?: string;
   status?: CaseStatus | readonly CaseStatus[];
   country?: string | readonly string[];
   created_after?: string | Date;
   created_before?: string | Date;
   limit?: number;
   cursor?: string;
+}
+
+/** L'état d'un dossier en un mot. `resubmission_requested` n'est pas un refus : la personne doit
+ * reprendre des photos. `rejected` est un refus définitif (une révision reste possible). */
+export type CaseState =
+  | "awaiting_applicant"
+  | "processing"
+  | "in_review"
+  | "resubmission_requested"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "abandoned"
+  | (string & {});
+
+export interface CheckReport {
+  readonly step_name: string | null;
+  readonly step_type: string | null;
+  readonly occurred_at: string;
+  readonly status: string | null;
+  readonly reasons: readonly string[];
+  readonly measures: Readonly<Record<string, unknown>>;
+}
+
+/** `GET /v1/cases/{id}/results` : tout ce qui fonde la décision, sans donnée personnelle. */
+export interface CaseResults {
+  readonly case: {
+    readonly id: string;
+    readonly external_ref: string | null;
+    readonly flow_name: string;
+    readonly country: string;
+    readonly status: CaseStatus;
+    readonly environment: Environment;
+    readonly created_at: string;
+    readonly closed_at: string | null;
+  };
+  readonly state: CaseState;
+  readonly decision: {
+    readonly outcome: string;
+    readonly reason_code: string;
+    readonly automatic: boolean;
+    readonly made_at: string;
+    readonly revised: boolean;
+  } | null;
+  readonly resubmission: {
+    readonly number: number;
+    readonly steps: readonly string[];
+    readonly reason_code: string | null;
+  } | null;
+  readonly signals: number;
+  readonly checks: readonly CheckReport[];
+  readonly duplicates: readonly Readonly<Record<string, unknown>>[];
+  readonly pieces: readonly {
+    readonly id: string;
+    readonly subject: string;
+    readonly status: string;
+    readonly captured_at: string | null;
+    readonly available: boolean;
+  }[];
+}
+
+/** `GET /v1/cases/{id}/data` : les données personnelles. Clé avec la permission
+ * `personal_data` ; chaque lecture est inscrite au journal du dossier. */
+export interface CaseData {
+  readonly access_id: string;
+  readonly identity: {
+    readonly fields: Readonly<Record<string, string | null>>;
+    readonly agreements: Readonly<Record<string, string>>;
+  } | null;
+  readonly declared: Readonly<Record<string, string>>;
+  readonly applicant_data: Readonly<Record<string, unknown>> | null;
+  readonly questionnaires: readonly Readonly<Record<string, unknown>>[];
+}
+
+export interface CaseImage {
+  readonly contentType: string;
+  readonly data: Buffer;
 }
 
 export interface Page<T> {
@@ -129,7 +208,14 @@ export interface RequestOptions {
 export interface WebhookEvent<T = Record<string, unknown>> {
   readonly type: string;
   readonly occurred_at: string;
-  readonly object: { readonly id: string; readonly type: string };
+  /** Pour un dossier, aussi `external_ref`, `flow_name` et `environment`. */
+  readonly object: {
+    readonly id: string;
+    readonly type: string;
+    readonly external_ref?: string | null;
+    readonly flow_name?: string;
+    readonly environment?: Environment;
+  };
   readonly data: T;
   /** `X-Tano-Delivery` : gardez-le pour écarter les doublons. */
   readonly delivery_id: string;

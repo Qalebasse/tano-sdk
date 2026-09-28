@@ -160,3 +160,43 @@ describe("l'anti-rejeu", () => {
     expect(new Set(calls.map((c) => headersOf(c)["X-Tano-Signature"])).size).toBe(3);
   });
 });
+
+describe("les résultats d'un dossier", () => {
+  it("lit les résultats, les données et cherche par référence exacte", async () => {
+    const { fetch, calls } = fakeFetch(
+      json(200, { state: "resubmission_requested", resubmission: { steps: ["face"] } }),
+      json(200, { declared: { surname: "KOUASSI" } }),
+      json(200, { data: [], has_more: false, next_cursor: null }),
+    );
+    const tano = new Tano({ apiKey: KEY, fetch });
+    expect((await tano.cases.results("case_1")).state).toBe("resubmission_requested");
+    expect((await tano.cases.data("case_1")).declared.surname).toBe("KOUASSI");
+    await tano.cases.list({ external_ref: "CLIENT-42" });
+    expect(calls.map((c) => c.url)).toEqual([
+      "https://api.tano.africa/v1/cases/case_1/results",
+      "https://api.tano.africa/v1/cases/case_1/data",
+      "https://api.tano.africa/v1/cases?external_ref=CLIENT-42",
+    ]);
+  });
+
+  it("rend une image en octets, avec son type", async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    const { fetch, calls } = fakeFetch(
+      new Response(png, { status: 200, headers: { "content-type": "image/png" } }),
+    );
+    const image = await new Tano({ apiKey: KEY, fetch }).cases.image("case_1", "cap_9");
+    expect(image.contentType).toBe("image/png");
+    expect([...image.data]).toEqual([...png]);
+    expect(calls[0]?.url).toBe("https://api.tano.africa/v1/cases/case_1/images/cap_9");
+  });
+
+  it("dit clairement qu'il manque la permission", async () => {
+    const { fetch } = fakeFetch(
+      json(403, { error: { type: "permission_denied", code: "key_permission_missing" } }),
+    );
+    await expect(new Tano({ apiKey: KEY, fetch }).cases.data("case_1")).rejects.toMatchObject({
+      status: 403,
+      code: "key_permission_missing",
+    });
+  });
+});

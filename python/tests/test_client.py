@@ -146,3 +146,30 @@ def test_la_meme_requete_n_est_jamais_signee_deux_fois_pareil() -> None:
         tano.sessions.create(case_id="case_1")
     assert len({c.headers["X-Tano-Timestamp"] for c in fake.calls}) == 3
     assert len({c.headers["X-Tano-Signature"] for c in fake.calls}) == 3
+
+
+def test_les_resultats_les_donnees_et_une_image() -> None:
+    fake = Fake(
+        reply(200, {"state": "approved"}),
+        reply(200, {"declared": {"surname": "KOUASSI"}}),
+        HttpResponse(200, {"Content-Type": "image/png"}, b"\x89PNG"),
+        reply(200, {"data": [], "has_more": False, "next_cursor": None}),
+    )
+    tano = Tano(KEY, transport=fake)
+    assert tano.cases.results("case_1")["state"] == "approved"
+    assert tano.cases.data("case_1")["declared"]["surname"] == "KOUASSI"
+    assert tano.cases.image("case_1", "cap_9") == ("image/png", b"\x89PNG")
+    tano.cases.list(external_ref="CLIENT-42")
+    assert [c.url for c in fake.calls] == [
+        "https://api.tano.africa/v1/cases/case_1/results",
+        "https://api.tano.africa/v1/cases/case_1/data",
+        "https://api.tano.africa/v1/cases/case_1/images/cap_9",
+        "https://api.tano.africa/v1/cases?external_ref=CLIENT-42",
+    ]
+
+
+def test_la_permission_manquante_se_dit() -> None:
+    fake = Fake(reply(403, {"error": {"code": "key_permission_missing"}}))
+    with pytest.raises(TanoApiError) as caught:
+        Tano(KEY, transport=fake).cases.data("case_1")
+    assert (caught.value.status, caught.value.code) == (403, "key_permission_missing")

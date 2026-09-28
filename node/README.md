@@ -29,11 +29,34 @@ const session = await tano.sessions.create({
 // session.url : le lien du parcours, rendu une seule fois. Donnez-le au navigateur.
 ```
 
+## Lire les résultats
+
+```ts
+const r = await tano.cases.results(dossier.id);
+switch (r.state) {
+  case "approved": /* … */ break;
+  case "rejected": /* refus définitif : r.decision.reason_code */ break;
+  case "resubmission_requested": /* la personne doit reprendre r.resubmission.steps */ break;
+}
+// r.checks : le compte rendu de chaque contrôle (statut, motifs, mesures), sans donnée personnelle.
+
+const [dossierTrouve] = (await tano.cases.list({ external_ref: "client-42" })).data;
+```
+
+## Lire les données personnelles
+
+Avec une clé créée avec la permission « données personnelles » (console, page Clés d'API).
+Chaque lecture est inscrite au journal des consultations du dossier.
+
+```ts
+const donnees = await tano.cases.data(dossier.id); // identité lue, déclaré, saisi, questionnaires
+const image = await tano.cases.image(dossier.id, r.pieces[0].id); // { contentType, data: Buffer }
+```
+
 ## Lire un dossier
 
 ```ts
 const d = await tano.cases.retrieve(dossier.id);
-if (d.decision?.outcome === "approved") { /* … */ }
 
 for await (const c of tano.cases.listAll({ status: "review" })) console.log(c.id);
 ```

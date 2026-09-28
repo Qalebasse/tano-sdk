@@ -29,6 +29,30 @@ session = tano.sessions.create(
 # session["url"] : le lien du parcours, rendu une seule fois.
 ```
 
+## Lire les résultats
+
+```python
+r = tano.cases.results(dossier["id"])
+if r["state"] == "approved":
+    ...
+elif r["state"] == "rejected":  # refus définitif : r["decision"]["reason_code"]
+    ...
+elif r["state"] == "resubmission_requested":  # à reprendre : r["resubmission"]["steps"]
+    ...
+
+trouves = tano.cases.list(external_ref="client-42")["data"]
+```
+
+## Lire les données personnelles
+
+Avec une clé créée avec la permission « données personnelles » (console, page Clés d'API).
+Chaque lecture est inscrite au journal des consultations du dossier.
+
+```python
+donnees = tano.cases.data(dossier["id"])
+type_, octets = tano.cases.image(dossier["id"], r["pieces"][0]["id"])
+```
+
 ## Lire un dossier
 
 ```python
