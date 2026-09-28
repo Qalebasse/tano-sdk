@@ -1,0 +1,66 @@
+# @tano/web
+
+Le SDK navigateur de Tano : ouvrir le parcours de vérification depuis votre site, et savoir quand
+la personne revient.
+
+```bash
+npm install @tano/web
+```
+
+ou, sans outil de build :
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@tano/web/dist/tano-web.global.js"></script>
+<!-- window.TanoWeb.launch(…), window.TanoWeb.handleReturn() -->
+```
+
+## 1. Votre serveur crée la session
+
+Avec `return_url` : une page de **votre** site (HTTPS, sans `?` ni `#`).
+
+```ts
+const session = await tano.sessions.create({
+  case_id,
+  return_url: "https://votre-site.example/verification/retour",
+});
+// renvoyez session.url à la page
+```
+
+## 2. La page ouvre le parcours, au clic
+
+```ts
+import { launch } from "@tano/web";
+
+bouton.addEventListener("click", async () => {
+  const { url } = await fetch("/api/verification", { method: "POST" }).then((r) => r.json());
+  launch({
+    url,
+    onReturn: () => rafraichirLeStatut(), // lisez le dossier côté serveur
+  });
+});
+```
+
+Le parcours s'ouvre dans une fenêtre. Si le navigateur la bloque, il s'ouvre dans l'onglet
+(`fallbackToRedirect: false` pour l'interdire). `mode: "redirect"` l'ouvre toujours dans l'onglet.
+
+## 3. La page de retour prévient l'onglet d'origine
+
+```ts
+import { handleReturn } from "@tano/web";
+
+const contexte = await handleReturn();
+if (contexte === "popup") {
+  // La fenêtre se ferme ; si le navigateur refuse, affichez « Vous pouvez fermer cette fenêtre ».
+} else {
+  // Le parcours avait été ouvert dans l'onglet même : affichez la suite ici.
+}
+```
+
+## Ce que le SDK ne fait pas
+
+Il ne transporte **aucun résultat** : un message de navigateur se falsifie. La décision se lit côté
+serveur — webhook `case.decided`, ou `GET /v1/cases/{id}`.
+
+Le parcours se coupe de la page qui l'a ouvert (`Cross-Origin-Opener-Policy`), pour qu'aucune page
+tierce ne puisse le piloter : c'est pourquoi le retour passe par votre page, et pourquoi le SDK ne
+sait pas si la personne ferme la fenêtre sans terminer. Le webhook vous le dira à l'expiration.
