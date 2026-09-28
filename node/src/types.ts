@@ -107,7 +107,7 @@ export interface CheckReport {
   readonly step_name: string | null;
   readonly step_type: string | null;
   readonly occurred_at: string;
-  readonly status: string | null;
+  readonly status: "ok" | "attention" | "failed" | null;
   readonly reasons: readonly string[];
   readonly measures: Readonly<Record<string, unknown>>;
 }
