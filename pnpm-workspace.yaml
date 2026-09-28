@@ -2,3 +2,4 @@ packages:
   - node
   - web
   - react
+  - react-native

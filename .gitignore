@@ -13,3 +13,13 @@ android/.gradle/
 android/**/build/
 android/local.properties
 android/.idea/
+flutter/.dart_tool/
+flutter/build/
+flutter/example/.dart_tool/
+flutter/example/build/
+flutter/**/.flutter-plugins*
+flutter/example/ios/Pods/
+flutter/example/**/Generated*
+flutter/example/android/local.properties
+flutter/example/android/.gradle/
+flutter/example/*.iml
