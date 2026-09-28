@@ -45,10 +45,13 @@ for c in tano.cases.list_all(status="review"):
 ```python
 from tano_sdk import WebhookSignatureError, verify_webhook
 
+
 @app.post("/tano")
 def tano_webhook():
     try:
-        evenement = verify_webhook(request.get_data(), request.headers, os.environ["TANO_WEBHOOK_SECRET"])
+        evenement = verify_webhook(
+            request.get_data(), request.headers, os.environ["TANO_WEBHOOK_SECRET"]
+        )
     except WebhookSignatureError:
         abort(401)
     # Écartez les doublons avec evenement["delivery_id"], mettez en file, puis répondez vite.
