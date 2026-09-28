@@ -1,0 +1,28 @@
+{
+  "name": "@tano/web",
+  "version": "0.1.0",
+  "description": "Le SDK navigateur de Tano : ouvrir le parcours de vérification et savoir quand il revient",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/tano-web.global.js",
+  "jsdelivr": "./dist/tano-web.global.js",
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "types": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --minify --format=iife --global-name=TanoWeb --target=es2020 --outfile=dist/tano-web.global.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2",
+    "happy-dom": "16.5.3"
+  }
+}
