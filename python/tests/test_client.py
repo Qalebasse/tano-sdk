@@ -173,3 +173,22 @@ def test_la_permission_manquante_se_dit() -> None:
     with pytest.raises(TanoApiError) as caught:
         Tano(KEY, transport=fake).cases.data("case_1")
     assert (caught.value.status, caught.value.code) == (403, "key_permission_missing")
+
+
+def test_decider_et_effacer() -> None:
+    fake = Fake(
+        reply(201, {"id": "rdc_1", "outcome": "approve"}),
+        reply(200, {"case_id": "case_1", "erased": {"images": 1}}),
+    )
+    tano = Tano(KEY, transport=fake)
+    tano.cases.decide("case_1", outcome="approve", reason_code="identity_confirmed")
+    assert tano.cases.erase("case_1")["erased"]["images"] == 1
+    assert [c.url for c in fake.calls] == [
+        "https://api.tano.africa/v1/cases/case_1/decision",
+        "https://api.tano.africa/v1/cases/case_1/erasure",
+    ]
+    assert json.loads(fake.calls[0].body or b"") == {
+        "outcome": "approve",
+        "reason_code": "identity_confirmed",
+    }
+    assert all(c.headers["X-Tano-Signature"].startswith("v2=") for c in fake.calls)

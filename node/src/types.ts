@@ -167,6 +167,31 @@ export interface CaseImage {
   readonly data: Buffer;
 }
 
+/** `POST /v1/cases/{id}/decision` : trancher un dossier en revue. Permission `decisions`. */
+export interface CaseDecisionParams {
+  outcome: "approve" | "reject" | "resubmit";
+  /** Un motif de la liste fermée (`identity_confirmed`, `document_forged`…). */
+  reason_code: string;
+  /** Pour `resubmit` : ce que la personne doit reprendre. */
+  steps?: readonly ("document" | "face")[];
+  comment?: string;
+}
+
+export interface CaseDecisionRecorded {
+  readonly id: string;
+  readonly case_id: string;
+  readonly outcome: string;
+  readonly case_outcome_notified: string | null;
+}
+
+/** `POST /v1/cases/{id}/erasure` : ce qui a été effacé, par nature. Des zéros au second appel. */
+export interface CaseErasure {
+  readonly case_id: string;
+  readonly erased: Readonly<
+    Record<"images" | "declared" | "identity" | "documents" | "review", number>
+  >;
+}
+
 export interface Page<T> {
   readonly data: readonly T[];
   readonly has_more: boolean;
