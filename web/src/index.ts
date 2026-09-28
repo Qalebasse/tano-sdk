@@ -161,3 +161,140 @@ export function handleReturn(options: HandleReturnOptions = {}): Promise<ReturnC
     channel.postMessage({ type: "tano:returned", id } satisfies Message);
   });
 }
+
+// ── Intégration dans la page (iframe) ────────────────────────────────────────
+
+export type EmbedStep =
+  | "consent"
+  | "applicant"
+  | "questionnaire"
+  | "document"
+  | "face"
+  | "check"
+  | "uploading"
+  | "help";
+
+export type EndReason = "declined" | "expired" | "invalid_link" | "later";
+
+/** Ce que le parcours intégré dit à votre page. Aucun résultat : la décision se lit côté serveur. */
+export type JourneyEvent =
+  | { readonly type: "tano:ready"; readonly version: number }
+  | { readonly type: "tano:step"; readonly step: EmbedStep }
+  | { readonly type: "tano:completed" }
+  | { readonly type: "tano:ended"; readonly reason: EndReason }
+  | { readonly type: "tano:resize"; readonly height: number };
+
+export interface MountOptions {
+  /** Le lien de la session, tel que rendu par `POST /v1/sessions`. */
+  readonly url: string;
+  /** Le parcours est affiché, la page hôte reconnue. */
+  readonly onReady?: () => void;
+  readonly onStep?: (step: EmbedStep) => void;
+  /** La personne a tout envoyé : allez lire le dossier côté serveur. */
+  readonly onCompleted?: () => void;
+  /** Le parcours s'est arrêté sans envoi : refus, lien expiré ou mort, « plus tard ». */
+  readonly onEnded?: (reason: EndReason) => void;
+  /** Tous les événements, tels quels. */
+  readonly onEvent?: (event: JourneyEvent) => void;
+  /**
+   * Le lien a expiré : rendez-en un nouveau (votre serveur crée une session pour le même
+   * dossier) et le parcours reprend dans le même cadre. Sans ce rappel, `onEnded("expired")`.
+   */
+  readonly onExpired?: () => Promise<string>;
+  /** Suivre la hauteur du parcours (vrai par défaut) ; sinon, `minHeight` fixe. */
+  readonly autoHeight?: boolean;
+  readonly minHeight?: number;
+  /** Le titre du cadre, lu par les lecteurs d'écran. */
+  readonly title?: string;
+}
+
+export interface MountedJourney {
+  readonly iframe: HTMLIFrameElement;
+  /** Retirer le parcours de la page et cesser d'écouter. */
+  destroy(): void;
+}
+
+/** L'adresse d'intégration d'un lien de session : même origine, chemin `/embed`, même fragment. */
+export function embedUrl(url: string): URL {
+  const parsed = checkJourneyUrl(url);
+  parsed.pathname = "/embed";
+  parsed.search = "";
+  return parsed;
+}
+
+/**
+ * Afficher le parcours dans votre page. Votre origine doit figurer parmi les domaines autorisés
+ * (console, page Développeurs) : le parcours ne s'affiche qu'après s'être assuré, par une poignée
+ * de main que le navigateur atteste, qu'il est bien dans une page à vous.
+ */
+export function mount(target: HTMLElement | string, options: MountOptions): MountedJourney {
+  const host = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
+  if (host === null)
+    throw new TanoWebError("invalid_url", `Élément introuvable : ${String(target)}.`);
+
+  let current = embedUrl(options.url);
+  const iframe = document.createElement("iframe");
+  iframe.src = current.toString();
+  // La caméra est déléguée au parcours, et à lui seul ; rien d'autre.
+  iframe.allow = "camera";
+  iframe.title = options.title ?? "Vérification d'identité";
+  iframe.referrerPolicy = "no-referrer";
+  iframe.style.border = "0";
+  iframe.style.width = "100%";
+  iframe.style.height = `${options.minHeight ?? 640}px`;
+  host.appendChild(iframe);
+
+  let renewing = false;
+  const onMessage = (event: MessageEvent) => {
+    if (event.source !== iframe.contentWindow || event.origin !== current.origin) return;
+    const data = event.data as { type?: unknown } | null;
+    if (data === null || typeof data.type !== "string") return;
+    if (data.type === "tano:hello") {
+      iframe.contentWindow?.postMessage({ type: "tano:init", version: 1 }, current.origin);
+      return;
+    }
+    const journey = data as JourneyEvent;
+    options.onEvent?.(journey);
+    switch (journey.type) {
+      case "tano:ready":
+        options.onReady?.();
+        break;
+      case "tano:step":
+        options.onStep?.(journey.step);
+        break;
+      case "tano:completed":
+        options.onCompleted?.();
+        break;
+      case "tano:resize":
+        if (options.autoHeight !== false) {
+          iframe.style.height = `${Math.max(journey.height, options.minHeight ?? 0)}px`;
+        }
+        break;
+      case "tano:ended":
+        if (journey.reason === "expired" && options.onExpired !== undefined && !renewing) {
+          renewing = true;
+          options
+            .onExpired()
+            .then((fresh) => {
+              current = embedUrl(fresh);
+              iframe.src = current.toString();
+            })
+            .catch(() => options.onEnded?.("expired"))
+            .finally(() => {
+              renewing = false;
+            });
+          break;
+        }
+        options.onEnded?.(journey.reason);
+        break;
+    }
+  };
+  window.addEventListener("message", onMessage);
+  return {
+    iframe,
+    destroy: () => {
+      window.removeEventListener("message", onMessage);
+      iframe.remove();
+    },
+  };
+}

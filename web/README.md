@@ -1,7 +1,34 @@
 # @tano/web
 
-Le SDK navigateur de Tano : ouvrir le parcours de vérification depuis votre site, et savoir quand
-la personne revient.
+Le SDK navigateur de Tano : afficher le parcours de vérification **dans votre page**, ou l'ouvrir
+dans une fenêtre, et savoir où en est la personne.
+
+## Dans votre page (recommandé)
+
+1. Dans la console, page Développeurs, ajoutez votre origine aux **domaines autorisés**
+   (`https://votre-site.example`, et `http://localhost:5173` pour développer).
+2. Votre serveur crée la session et rend son `url`.
+3. La page affiche le parcours :
+
+```ts
+import { mount } from "@tano/web";
+
+const parcours = mount("#verification", {
+  url,
+  onStep: (etape) => suivi(etape), // consent, document, face, uploading…
+  onCompleted: () => afficherMerci(), // puis lisez le dossier côté serveur
+  onEnded: (raison) => proposerDeRecommencer(raison), // declined, expired, invalid_link, later
+  // Le lien a expiré : un nouveau, et le parcours reprend dans le même cadre.
+  onExpired: () => fetch("/api/verification/lien").then((r) => r.json()).then((j) => j.url),
+});
+// parcours.destroy() pour le retirer.
+```
+
+Le parcours ne s'affiche qu'après une poignée de main avec votre page, dont le navigateur atteste
+l'origine : encadré par une page qui n'est pas dans votre liste, il refuse de s'afficher. La
+caméra lui est déléguée (`allow="camera"`), et à lui seul. En React : `@tano/react`.
+
+## Dans une fenêtre ou l'onglet
 
 ```bash
 npm install @tano/web
