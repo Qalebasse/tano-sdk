@@ -62,7 +62,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      # Le SDK Android est déjà sur l'image Ubuntu de GitHub (ANDROID_HOME), licences comprises.
       - run: ./gradlew --no-daemon :tano:testDebugUnitTest :demo:assembleDebug
 
   flutter:
