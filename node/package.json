@@ -1,5 +1,5 @@
 {
-  "name": "@tano/node",
+  "name": "@tanocompany/node",
   "version": "0.1.0",
   "description": "Le SDK serveur de Tano pour Node.js : dossiers, sessions de parcours, webhooks",
   "license": "MIT",

@@ -25,7 +25,7 @@ importers:
 
   react:
     dependencies:
-      '@tano/web':
+      '@tanocompany/web':
         specifier: workspace:*
         version: link:../web
     devDependencies:

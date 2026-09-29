@@ -1,15 +1,15 @@
 /**
  * Le parcours de vérification Tano dans une page React.
  *
- * Une enveloppe de `mount` (@tano/web) : le composant monte le cadre, le démonte, et le remonte
+ * Une enveloppe de `mount` (@tanocompany/web) : le composant monte le cadre, le démonte, et le remonte
  * quand le lien change. Les rappels sont lus à jour sans remonter le parcours.
  */
 
 import { type CSSProperties, useEffect, useRef } from "react";
 
-import { type EmbedStep, type EndReason, type JourneyEvent, mount } from "@tano/web";
+import { type EmbedStep, type EndReason, type JourneyEvent, mount } from "@tanocompany/web";
 
-export type { EmbedStep, EndReason, JourneyEvent } from "@tano/web";
+export type { EmbedStep, EndReason, JourneyEvent } from "@tanocompany/web";
 
 export interface TanoVerificationProps {
   /** Le lien de la session, créé par votre serveur (`POST /v1/sessions`). */
