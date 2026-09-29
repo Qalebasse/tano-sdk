@@ -1,37 +1,37 @@
 # tano_flutter
 
-The [Tano](https://docs.tano.africa) identity verification journey in your Flutter app (Android and
-iOS), with its progress events.
+Le parcours de vérification d'identité [Tano](https://docs.tano.africa) dans votre application
+Flutter (Android et iOS), avec ses événements d'avancement.
 
-## Requirements
+## Prérequis
 
-Flutter 3.24 or later · Dart 3.5 or later · Android API 24+ · iOS 15+.
+Flutter 3.24 ou plus récent · Dart 3.5 ou plus récent · Android API 24+ · iOS 15+.
 
 ## Installation
 
-Until the package is published on pub.dev, depend on it by path or git:
+En attendant la publication sur pub.dev, dépendez du paquet par chemin ou par git :
 
 ```yaml
 dependencies:
   tano_flutter:
-    path: path/to/tano-sdk/flutter
+    path: chemin/vers/tano-sdk/flutter
 ```
 
-- **iOS** — add `NSCameraUsageDescription` to `Info.plist`.
-- **Android** — declare `android.permission.CAMERA` and request it before opening the journey
-  (for example with `permission_handler`).
+- **iOS** — ajoutez `NSCameraUsageDescription` à l'`Info.plist`.
+- **Android** — déclarez `android.permission.CAMERA` et demandez-la avant d'ouvrir le parcours
+  (par exemple avec `permission_handler`).
 
-## Usage
+## Utilisation
 
 ```dart
 import 'package:tano_flutter/tano_flutter.dart';
 
 TanoVerification(
-  url: Uri.parse(session.url), // created by your server (POST /v1/sessions)
+  url: Uri.parse(session.url), // créée par votre serveur (POST /v1/sessions)
   onEvent: (event) => switch (event) {
     TanoReady() => null,
     TanoStep(:final step) => analytics.track(step),
-    TanoCompleted() => showThankYou(),            // then read the case on your server
+    TanoCompleted() => showThankYou(),              // puis lisez le dossier côté serveur
     TanoEnded(:final reason) => offerRetry(reason), // declined, expired, cancelled…
   },
 )
@@ -39,25 +39,26 @@ TanoVerification(
 
 ## API
 
-| Symbol | Description |
+| Symbole | Description |
 | --- | --- |
-| `TanoVerification({required Uri url, required onEvent})` | The journey, in a `WebViewWidget` |
+| `TanoVerification({required Uri url, required onEvent})` | Le parcours, dans un `WebViewWidget` |
 | `TanoEvent` | `TanoReady`, `TanoStep(step)`, `TanoCompleted`, `TanoEnded(reason)` |
 
-`TanoEnded.reason`: `declined`, `expired`, `invalid_link`, `later`, or `cancelled` when the widget
-is disposed before the end.
+`TanoEnded.reason` : `declined`, `expired`, `invalid_link`, `later`, ou `cancelled` quand le widget
+est retiré avant la fin.
 
-## Security
+## Sécurité
 
-- The camera is granted on request; navigation stays on the journey's origin and external links
-  open in the system browser.
-- Cache and local storage are cleared when the widget is disposed.
-- Events never carry a result or personal data — read the decision on your server.
+- La caméra est accordée à la demande ; la navigation reste sur l'origine du parcours et les liens
+  sortants s'ouvrent dans le navigateur du système.
+- Le cache et le stockage local sont vidés quand le widget est retiré.
+- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+  serveur.
 
-## Example
+## Exemple
 
-`example/` opens the journey and logs its events.
+`example/` ouvre le parcours et journalise ses événements.
 
-## License
+## Licence
 
 MIT © Qalebasse

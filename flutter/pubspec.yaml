@@ -1,5 +1,5 @@
 name: tano_flutter
-description: The Tano identity verification journey in a Flutter app (Android and iOS), with its progress events.
+description: Le parcours de vérification d'identité Tano dans une application Flutter (Android et iOS), avec ses événements.
 version: 0.1.0
 homepage: https://docs.tano.africa
 publish_to: none

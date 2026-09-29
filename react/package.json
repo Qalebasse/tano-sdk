@@ -1,7 +1,7 @@
 {
   "name": "@tano-africa/react",
   "version": "0.1.0",
-  "description": "The Tano identity verification journey as a React component.",
+  "description": "Le parcours de vérification d'identité Tano en composant React.",
   "license": "MIT",
   "type": "module",
   "exports": {

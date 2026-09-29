@@ -1,7 +1,7 @@
 [project]
 name = "tano-sdk"
 version = "0.1.0"
-description = "Official Python library for the Tano identity verification API: cases, journey sessions, results, webhooks."
+description = "Bibliothèque Python officielle de l'API de vérification d'identité Tano : dossiers, sessions de parcours, résultats, webhooks."
 readme = "README.md"
 keywords = ["tano", "kyc", "identity", "verification", "africa"]
 license = { text = "MIT" }

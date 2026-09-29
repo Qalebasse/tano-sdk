@@ -1,27 +1,28 @@
-# TanoSDK for iOS
+# TanoSDK pour iOS
 
-The [Tano](https://docs.tano.africa) identity verification journey in your iOS app, with its
-progress events.
+Le parcours de vérification d'identité [Tano](https://docs.tano.africa) dans votre application
+iOS, avec ses événements d'avancement.
 
-## Requirements
+## Prérequis
 
-iOS 15 or later · Swift 5.9 or later · Xcode 15 or later.
+iOS 15 ou plus récent · Swift 5.9 ou plus récent · Xcode 15 ou plus récent.
 
 ## Installation
 
-Swift Package Manager, product `TanoSDK`. Until the public Swift package repository is available,
-add this `ios/` directory as a local package (*File → Add Package Dependencies → Add Local*).
+Swift Package Manager, produit `TanoSDK`. En attendant le dépôt public du paquet Swift, ajoutez
+ce dossier `ios/` comme paquet local (*File → Add Package Dependencies → Add Local*).
 
-Add to your app's `Info.plist`:
+Ajoutez à l'`Info.plist` de l'application :
 
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>The camera is used to photograph your identity document and your face.</string>
+<string>La caméra sert à photographier votre pièce d'identité et votre visage.</string>
 ```
 
-## Usage
+## Utilisation
 
-Create the session on your server (`POST /v1/sessions`) and pass its `url` to the app:
+Créez la session sur votre serveur (`POST /v1/sessions`) et transmettez son `url` à
+l'application :
 
 ```swift
 import TanoSDK
@@ -33,7 +34,7 @@ let verification = TanoVerificationViewController(url: sessionURL) { event in
     case .step(let step):
         analytics.track(step)            // consent, document, face, uploading…
     case .completed:
-        self.showThankYou()              // then read the case on your server
+        self.showThankYou()              // puis lisez le dossier côté serveur
     case .ended(let reason):
         self.offerRetry(reason)          // declined, expired, invalid_link, later, cancelled
     }
@@ -43,24 +44,26 @@ present(UINavigationController(rootViewController: verification), animated: true
 
 ## API
 
-| Symbol | Description |
+| Symbole | Description |
 | --- | --- |
-| `TanoVerificationViewController(url:onEvent:)` | Full-screen journey in a `WKWebView`, with a close button (`ended("cancelled")`) |
+| `TanoVerificationViewController(url:onEvent:)` | Le parcours plein écran dans une `WKWebView`, avec un bouton de fermeture (`ended("cancelled")`) |
 | `TanoEvent` | `.ready`, `.step(String)`, `.completed`, `.ended(String)` |
-| `TanoJourneyURL.validated(_:)` | `https` URLs, or `http://localhost` for development |
+| `TanoJourneyURL.validated(_:)` | URL en `https`, ou `http://localhost` pour développer |
 
-## Security
+## Sécurité
 
-- The camera is granted to the journey's origin only; navigation stays on that origin and external
-  links open in Safari.
-- The web view uses a non-persistent data store: nothing from the journey is kept on the device.
-- Events never carry a result or personal data — read the decision on your server.
+- La caméra n'est accordée qu'à l'origine du parcours ; la navigation reste sur cette origine et
+  les liens sortants s'ouvrent dans Safari.
+- La WebView n'a pas de stockage persistant : rien du parcours n'est gardé sur l'appareil.
+- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+  serveur.
 
-## Example
+## Exemple
 
-`Example/build.sh` builds a demo app for the iOS simulator, without an Xcode project. It opens the
-URL passed as launch argument and logs every event (`TANO_EVENT`).
+`Example/build.sh` construit une application de démonstration pour le simulateur iOS, sans projet
+Xcode. Elle ouvre l'URL passée en argument de lancement et journalise chaque événement
+(`TANO_EVENT`).
 
-## License
+## Licence
 
 MIT © Qalebasse

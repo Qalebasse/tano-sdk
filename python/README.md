@@ -1,16 +1,17 @@
 # tano-sdk
 
-The official Python library for the [Tano](https://docs.tano.africa) identity verification API.
+La bibliothèque Python officielle de l'API de vérification d'identité
+[Tano](https://docs.tano.africa).
 
-- Request signing (HMAC-SHA256, v2) and replay protection handled for you
-- Idempotency keys on every write, kept across retries
-- Automatic retries on network errors, `429` and `5xx`, honouring `Retry-After`
-- Webhook signature verification
-- Typed (`py.typed`), zero dependencies — the standard library only
+- Signature des requêtes (HMAC-SHA256, v2) et protection contre le rejeu, prises en charge
+- Clé d'idempotence sur chaque écriture, conservée d'un réessai à l'autre
+- Réessais automatiques sur coupure réseau, `429` et `5xx`, en respectant `Retry-After`
+- Vérification de la signature des webhooks
+- Typée (`py.typed`), sans dépendance : la bibliothèque standard seulement
 
-## Requirements
+## Prérequis
 
-Python 3.9 or later.
+Python 3.9 ou plus récent.
 
 ## Installation
 
@@ -18,27 +19,27 @@ Python 3.9 or later.
 pip install tano-sdk
 ```
 
-## Quick start
+## Démarrage rapide
 
 ```python
 import os
 from tano_sdk import Tano
 
-tano = Tano(os.environ["TANO_API_KEY"])  # tano_sandbox_… or tano_prod_…
+tano = Tano(os.environ["TANO_API_KEY"])  # tano_sandbox_… ou tano_prod_…
 
 case = tano.cases.create(
     flow_name="onboarding_individual_ci",
     country="CI",
-    external_ref="customer-42",  # one case per intent, even if the request is replayed
+    external_ref="customer-42",  # un seul dossier par intention, même rejouée
     declared={"surname": "KOUASSI", "given_names": "Awa"},
 )
 
 session = tano.sessions.create(
     case_id=case["id"],
     locale="fr",
-    return_url="https://your-site.example/verification/done",
+    return_url="https://votre-site.example/verification/terminee",
 )
-print(session["url"])  # returned once — do not store it
+print(session["url"])  # rendue une seule fois — ne la stockez pas
 
 results = tano.cases.results(case["id"])
 if results["state"] == "approved":
@@ -49,38 +50,38 @@ if results["state"] == "approved":
 
 ```python
 Tano(
-    api_key,  # required — the environment is read from the key prefix
+    api_key,  # obligatoire — l'environnement se lit dans le préfixe de la clé
     base_url="https://api.tano.africa",
-    timeout=30.0,  # seconds, per attempt
+    timeout=30.0,  # secondes, par tentative
     max_retries=2,
-    transport=urllib_transport,  # replaceable: any callable HttpRequest -> HttpResponse
+    transport=urllib_transport,  # remplaçable : tout appelable HttpRequest -> HttpResponse
 )
 ```
 
-## API reference
+## Référence de l'API
 
-| Method | Endpoint | Notes |
+| Méthode | Route | Notes |
 | --- | --- | --- |
-| `cases.create(flow_name, country, external_ref=None, declared=None, idempotency_key=None)` | `POST /v1/cases` | Signed |
-| `cases.retrieve(case_id)` | `GET /v1/cases/{id}` | Status, steps and decision |
-| `cases.list(q, external_ref, status, country, created_after, created_before, limit, cursor)` | `GET /v1/cases` | One page: `data`, `has_more`, `next_cursor` |
-| `cases.list_all(**filters)` | — | Iterates over every page |
-| `cases.results(case_id)` | `GET /v1/cases/{id}/results` | `state`, decision, resubmission, checks, pieces — no personal data |
-| `cases.data(case_id)` | `GET /v1/cases/{id}/data` | Personal data. Requires `personal_data`; every read is logged |
-| `cases.image(case_id, piece_id)` | `GET /v1/cases/{id}/images/{piece_id}` | `(content_type, bytes)`. Requires `personal_data` |
-| `cases.decide(case_id, outcome, reason_code, steps=None, comment=None)` | `POST /v1/cases/{id}/decision` | `approve`, `reject` or `resubmit` a case in review. Requires `decisions` |
-| `cases.erase(case_id)` | `POST /v1/cases/{id}/erasure` | Erase personal data of a closed case. Requires `personal_data` |
-| `sessions.create(case_id, locale=None, lifetime_minutes=None, return_url=None)` | `POST /v1/sessions` | Journey `url`, returned once |
-| `sandbox.submit(case_id)` | `POST /v1/sandbox/cases/{id}/submit` | Sandbox keys only; the declared surname picks the outcome |
-| `request(method, path, body=None, query=None, idempotency_key=None)` | any | Raw call with signing, idempotency and retries |
+| `cases.create(flow_name, country, external_ref=None, declared=None, idempotency_key=None)` | `POST /v1/cases` | Signée |
+| `cases.retrieve(case_id)` | `GET /v1/cases/{id}` | État, étapes et décision |
+| `cases.list(q, external_ref, status, country, created_after, created_before, limit, cursor)` | `GET /v1/cases` | Une page : `data`, `has_more`, `next_cursor` |
+| `cases.list_all(**filters)` | — | Parcourt toutes les pages |
+| `cases.results(case_id)` | `GET /v1/cases/{id}/results` | `state`, décision, reprise, contrôles, pièces — sans donnée personnelle |
+| `cases.data(case_id)` | `GET /v1/cases/{id}/data` | Données personnelles. Permission `personal_data` ; chaque lecture est journalisée |
+| `cases.image(case_id, piece_id)` | `GET /v1/cases/{id}/images/{piece_id}` | `(content_type, bytes)`. Permission `personal_data` |
+| `cases.decide(case_id, outcome, reason_code, steps=None, comment=None)` | `POST /v1/cases/{id}/decision` | `approve`, `reject` ou `resubmit` un dossier en revue. Permission `decisions` |
+| `cases.erase(case_id)` | `POST /v1/cases/{id}/erasure` | Effacer les données personnelles d'un dossier clos. Permission `personal_data` |
+| `sessions.create(case_id, locale=None, lifetime_minutes=None, return_url=None)` | `POST /v1/sessions` | L'`url` du parcours, rendue une seule fois |
+| `sandbox.submit(case_id)` | `POST /v1/sandbox/cases/{id}/submit` | Clés de bac à sable seulement ; le nom de famille déclaré choisit l'issue |
+| `request(method, path, body=None, query=None, idempotency_key=None)` | toute route | Appel brut, avec signature, idempotence et réessais |
 
-`results["state"]` is one of `awaiting_applicant`, `processing`, `in_review`,
-`resubmission_requested` (not a rejection), `approved`, `rejected` (final), `expired`,
+`results["state"]` vaut `awaiting_applicant`, `processing`, `in_review`,
+`resubmission_requested` (pas un refus), `approved`, `rejected` (définitif), `expired` ou
 `abandoned`.
 
 ## Webhooks
 
-Pass the **raw** body (`request.get_data()`, `await request.body()`).
+Passez le corps **brut** (`request.get_data()`, `await request.body()`).
 
 ```python
 from flask import Flask, abort, request
@@ -97,24 +98,24 @@ def tano_webhook():
         )
     except WebhookSignatureError:
         abort(401)
-    # Deduplicate on event["delivery_id"], enqueue the work, answer fast.
+    # Écartez les doublons avec event["delivery_id"], mettez en file, répondez vite.
     return "", 204
 ```
 
-## Errors
+## Erreurs
 
-| Exception | When | Useful attributes |
+| Exception | Quand | Attributs utiles |
 | --- | --- | --- |
-| `TanoApiError` | The API answered with an error | `status`, `type`, `code` (stable), `field`, `request_id`, `doc_url` |
-| `TanoConnectionError` | No response after retries | Replaying with the same `idempotency_key` is safe |
-| `WebhookSignatureError` | A delivery failed verification | Answer `401` |
-| `TanoError` | Base class, e.g. malformed API key | |
+| `TanoApiError` | L'API a répondu une erreur | `status`, `type`, `code` (stable), `field`, `request_id`, `doc_url` |
+| `TanoConnectionError` | Pas de réponse après les réessais | Rejouer avec la même `idempotency_key` est sans risque |
+| `WebhookSignatureError` | Une livraison n'a pas passé la vérification | Répondez `401` |
+| `TanoError` | Classe de base, par exemple une clé mal formée | |
 
 ## Support
 
-Documentation: https://docs.tano.africa · Support: support@tano.africa · Security:
+Documentation : https://docs.tano.africa · Support : support@tano.africa · Sécurité :
 security@tano.africa
 
-## License
+## Licence
 
 MIT © Qalebasse
