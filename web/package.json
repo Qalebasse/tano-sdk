@@ -1,6 +1,6 @@
 {
   "name": "@tano-africa/web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bibliothèque navigateur officielle de Tano : le parcours de vérification d'identité dans votre page, ou dans une fenêtre.",
   "license": "MIT",
   "type": "module",
