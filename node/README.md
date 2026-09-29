@@ -1,16 +1,16 @@
-# @tano/node
+# @tano-africa/node
 
 Le SDK serveur de Tano pour Node.js (20 et plus). Il signe les requêtes, pose les clés
 d'idempotence, réessaie ce qui peut l'être et vérifie les webhooks. Aucune dépendance.
 
 ```bash
-npm install @tano/node
+npm install @tano-africa/node
 ```
 
 ## Ouvrir un dossier et envoyer la personne sur le parcours
 
 ```ts
-import { Tano } from "@tano/node";
+import { Tano } from "@tano-africa/node";
 
 const tano = new Tano({ apiKey: process.env.TANO_API_KEY! }); // tano_sandbox_… ou tano_prod_…
 
@@ -82,7 +82,7 @@ for await (const c of tano.cases.listAll({ status: "review" })) console.log(c.id
 
 ```ts
 import express from "express";
-import { verifyWebhook, WebhookSignatureError } from "@tano/node";
+import { verifyWebhook, WebhookSignatureError } from "@tano-africa/node";
 
 app.post("/tano", express.raw({ type: "application/json" }), (req, res) => {
   try {

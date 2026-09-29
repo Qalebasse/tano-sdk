@@ -1,5 +1,5 @@
 {
-  "name": "@tano/react",
+  "name": "@tano-africa/react",
   "version": "0.1.0",
   "description": "Le parcours de vérification Tano, intégré dans une page React",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@tano/web": "workspace:*"
+    "@tano-africa/web": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18"

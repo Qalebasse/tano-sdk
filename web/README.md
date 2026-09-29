@@ -1,4 +1,4 @@
-# @tano/web
+# @tano-africa/web
 
 Le SDK navigateur de Tano : afficher le parcours de vérification **dans votre page**, ou l'ouvrir
 dans une fenêtre, et savoir où en est la personne.
@@ -11,7 +11,7 @@ dans une fenêtre, et savoir où en est la personne.
 3. La page affiche le parcours :
 
 ```ts
-import { mount } from "@tano/web";
+import { mount } from "@tano-africa/web";
 
 const parcours = mount("#verification", {
   url,
@@ -26,18 +26,18 @@ const parcours = mount("#verification", {
 
 Le parcours ne s'affiche qu'après une poignée de main avec votre page, dont le navigateur atteste
 l'origine : encadré par une page qui n'est pas dans votre liste, il refuse de s'afficher. La
-caméra lui est déléguée (`allow="camera"`), et à lui seul. En React : `@tano/react`.
+caméra lui est déléguée (`allow="camera"`), et à lui seul. En React : `@tano-africa/react`.
 
 ## Dans une fenêtre ou l'onglet
 
 ```bash
-npm install @tano/web
+npm install @tano-africa/web
 ```
 
 ou, sans outil de build :
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@tano/web/dist/tano-web.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tano-africa/web/dist/tano-web.global.js"></script>
 <!-- window.TanoWeb.launch(…), window.TanoWeb.handleReturn() -->
 ```
 
@@ -56,7 +56,7 @@ const session = await tano.sessions.create({
 ## 2. La page ouvre le parcours, au clic
 
 ```ts
-import { launch } from "@tano/web";
+import { launch } from "@tano-africa/web";
 
 bouton.addEventListener("click", async () => {
   const { url } = await fetch("/api/verification", { method: "POST" }).then((r) => r.json());
@@ -73,7 +73,7 @@ Le parcours s'ouvre dans une fenêtre. Si le navigateur la bloque, il s'ouvre da
 ## 3. La page de retour prévient l'onglet d'origine
 
 ```ts
-import { handleReturn } from "@tano/web";
+import { handleReturn } from "@tano-africa/web";
 
 const contexte = await handleReturn();
 if (contexte === "popup") {

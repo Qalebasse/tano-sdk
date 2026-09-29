@@ -1,10 +1,10 @@
-# @tano/react-native
+# @tano-africa/react-native
 
 Le parcours de vérification Tano dans une application React Native, avec
 `react-native-webview`.
 
 ```tsx
-import { TanoVerification } from "@tano/react-native";
+import { TanoVerification } from "@tano-africa/react-native";
 
 <TanoVerification
   url={session.url} // créée par votre serveur (POST /v1/sessions)

@@ -1,5 +1,5 @@
 {
-  "name": "@tano/web",
+  "name": "@tano-africa/web",
   "version": "0.1.0",
   "description": "Le SDK navigateur de Tano : ouvrir le parcours de vérification et savoir quand il revient",
   "license": "MIT",

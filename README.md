@@ -4,9 +4,9 @@ Les SDK de [Tano](https://docs.tano.africa).
 
 | Paquet | Pour | Dossier |
 | --- | --- | --- |
-| `@tano/node` | votre serveur Node.js | [node](node) |
+| `@tano-africa/node` | votre serveur Node.js | [node](node) |
 | `tano-sdk` | votre serveur Python | [python](python) |
-| `@tano/web` | votre site : ouvrir le parcours | [web](web) |
+| `@tano-africa/web` | votre site : ouvrir le parcours | [web](web) |
 
 L'intégration type : le **serveur** ouvre un dossier et une session (clé d'API, signature) ; le
 **navigateur** ouvre le parcours avec l'URL de la session ; la **décision** arrive au serveur par
