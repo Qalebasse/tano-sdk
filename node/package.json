@@ -15,11 +15,17 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md"],
+  "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
   "scripts": {
     "types": "tsc --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
+  },
+  "homepage": "https://docs.tano.africa",
+  "keywords": ["tano", "kyc", "identity", "verification", "africa"],
+  "publishConfig": {
+    "access": "public"
   }
 }
