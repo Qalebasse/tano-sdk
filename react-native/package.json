@@ -1,6 +1,6 @@
 {
   "name": "@tano-africa/react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Le parcours de vérification d'identité Tano dans une application React Native.",
   "license": "MIT",
   "type": "module",

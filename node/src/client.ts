@@ -19,7 +19,7 @@ import type {
   SessionCreateParams,
 } from "./types.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 const DEFAULT_BASE_URL = "https://api.tano.africa";
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 
