@@ -1,15 +1,16 @@
 # @tano-africa/web
 
 [![npm](https://img.shields.io/npm/v/@tano-africa/web.svg)](https://www.npmjs.com/package/@tano-africa/web)
-[![license](https://img.shields.io/npm/l/@tano-africa/web.svg)](LICENSE)
+[![licence](https://img.shields.io/npm/l/@tano-africa/web.svg)](LICENSE)
 
-The official browser library for [Tano](https://docs.tano.africa): run the identity verification
-journey **inside your page**, in a popup, or in the current tab — and follow its progress.
+La bibliothèque navigateur officielle de [Tano](https://docs.tano.africa) : le parcours de
+vérification d'identité **dans votre page**, dans une fenêtre ou dans l'onglet — et son
+avancement.
 
-- Embedded journey (`mount`) with an origin-verified handshake — it never renders on a site you did not allow
-- Popup or redirect (`launch`), with a return page that notifies the opening tab
-- Progress events, automatic height, expired-link renewal in place
-- Under 3 kB minified, zero dependencies, ESM and a `<script>` build
+- Parcours intégré (`mount`), avec une poignée de main vérifiée par origine : il ne s'affiche jamais sur un site que vous n'avez pas autorisé
+- Fenêtre ou redirection (`launch`), avec une page de retour qui prévient l'onglet d'origine
+- Événements d'avancement, hauteur automatique, renouvellement d'un lien expiré sur place
+- Moins de 3 Ko minifié, sans dépendance, ESM et version `<script>`
 
 ## Installation
 
@@ -17,19 +18,19 @@ journey **inside your page**, in a popup, or in the current tab — and follow i
 npm install @tano-africa/web
 ```
 
-Or without a bundler:
+Ou sans outil de construction :
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@tano-africa/web/dist/tano-web.global.js"></script>
 <!-- window.TanoWeb.mount(…), window.TanoWeb.launch(…), window.TanoWeb.handleReturn() -->
 ```
 
-## Embed the journey in your page (recommended)
+## Le parcours dans votre page (recommandé)
 
-1. **Allow your origins** in the Tano console → *Developers* → *Journey in your pages*
-   (`https://www.your-site.com`; add `http://localhost:5173` for development).
-2. **Create a session on your server** (`POST /v1/sessions`) and return its `url` to the page.
-3. **Mount the journey**:
+1. **Autorisez vos origines** dans la console Tano → *Développeurs* → *Parcours dans vos pages*
+   (`https://www.votre-site.com` ; ajoutez `http://localhost:5173` pour développer).
+2. **Créez la session sur votre serveur** (`POST /v1/sessions`) et rendez son `url` à la page.
+3. **Montez le parcours** :
 
 ```ts
 import { mount } from "@tano-africa/web";
@@ -37,37 +38,38 @@ import { mount } from "@tano-africa/web";
 const journey = mount("#verification", {
   url: session.url,
   onStep: (step) => trackStep(step),        // consent, document, face, uploading…
-  onCompleted: () => showThankYou(),        // then read the case on your server
+  onCompleted: () => showThankYou(),        // puis lisez le dossier côté serveur
   onEnded: (reason) => offerRetry(reason),  // declined, expired, invalid_link, later
-  // The link expired: return a fresh one and the journey resumes in the same frame.
+  // Le lien a expiré : rendez-en un nouveau, le parcours reprend dans le même cadre.
   onExpired: () => fetch("/api/verification/link").then((r) => r.json()).then((j) => j.url),
 });
 
-// journey.destroy() removes it.
+// journey.destroy() le retire.
 ```
 
-The camera is delegated to the journey frame only (`allow="camera"`), with no referrer. The journey
-completes a handshake with your page before rendering: the browser attests your page's origin,
-which must be in your allowed list — framed anywhere else, it shows a refusal and sends nothing.
+La caméra n'est déléguée qu'au cadre du parcours (`allow="camera"`), sans référent. Le parcours
+fait une poignée de main avec votre page avant de s'afficher : le navigateur atteste l'origine de
+votre page, qui doit figurer dans votre liste — encadré ailleurs, il affiche un refus et n'envoie
+rien.
 
 ### `mount(target, options)`
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `url` | `string` | The session URL from `POST /v1/sessions`. Required |
-| `onReady` | `() => void` | The journey is displayed |
-| `onStep` | `(step: EmbedStep) => void` | A step starts |
-| `onCompleted` | `() => void` | Everything was sent |
-| `onEnded` | `(reason: EndReason) => void` | Stopped without sending |
-| `onEvent` | `(event: JourneyEvent) => void` | Every event, raw |
-| `onExpired` | `() => Promise<string>` | Return a new session URL to resume in place |
-| `autoHeight` | `boolean` | Follow the journey's height (default `true`) |
-| `minHeight` | `number` | Frame height in pixels (default `640`) |
-| `title` | `string` | Accessible title of the frame |
+| `url` | `string` | L'URL de la session, rendue par `POST /v1/sessions`. Obligatoire |
+| `onReady` | `() => void` | Le parcours est affiché |
+| `onStep` | `(step: EmbedStep) => void` | Une étape commence |
+| `onCompleted` | `() => void` | Tout a été envoyé |
+| `onEnded` | `(reason: EndReason) => void` | Arrêt sans envoi |
+| `onEvent` | `(event: JourneyEvent) => void` | Tous les événements, tels quels |
+| `onExpired` | `() => Promise<string>` | Rendez une nouvelle URL de session pour reprendre sur place |
+| `autoHeight` | `boolean` | Suivre la hauteur du parcours (`true` par défaut) |
+| `minHeight` | `number` | Hauteur du cadre en pixels (`640` par défaut) |
+| `title` | `string` | Titre accessible du cadre |
 
-Returns `{ iframe: HTMLIFrameElement, destroy(): void }`.
+Rend `{ iframe: HTMLIFrameElement, destroy(): void }`.
 
-## Popup or redirect
+## Fenêtre ou redirection
 
 ```ts
 import { launch } from "@tano-africa/web";
@@ -77,39 +79,39 @@ button.addEventListener("click", () => {
 });
 ```
 
-`launch` opens a popup (from a user gesture), or the current tab if the popup is blocked
-(`fallbackToRedirect: false` to forbid it; `mode: "redirect"` to always use the tab). Create the
-session with a `return_url` on your site; on that page:
+`launch` ouvre une fenêtre (depuis un geste de la personne), ou l'onglet si la fenêtre est bloquée
+(`fallbackToRedirect: false` pour l'interdire ; `mode: "redirect"` pour toujours utiliser
+l'onglet). Créez la session avec une `return_url` sur votre site ; sur cette page :
 
 ```ts
 import { handleReturn } from "@tano-africa/web";
 
-const context = await handleReturn(); // "popup": this window closes · "page": continue here
+const context = await handleReturn(); // "popup" : la fenêtre se ferme · "page" : continuez ici
 ```
 
-## Events
+## Événements
 
-| Event | Payload |
+| Événement | Contenu |
 | --- | --- |
 | `tano:ready` | `version` |
-| `tano:step` | `step`: `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
+| `tano:step` | `step` : `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
 | `tano:completed` | — |
-| `tano:ended` | `reason`: `declined`, `expired`, `invalid_link`, `later` |
+| `tano:ended` | `reason` : `declined`, `expired`, `invalid_link`, `later` |
 | `tano:resize` | `height` |
 
-Events never carry a result or personal data. **Read the decision on your server** — webhook
-`case.decided`, or `GET /v1/cases/{id}/results`.
+Aucun événement ne porte de résultat ni de donnée personnelle. **Lisez la décision sur votre
+serveur** — webhook `case.decided`, ou `GET /v1/cases/{id}/results`.
 
-## Errors
+## Erreurs
 
-`TanoWebError` with `code`: `invalid_url` (not HTTPS, except `localhost`), `popup_blocked`,
+`TanoWebError`, avec `code` : `invalid_url` (pas en HTTPS, sauf `localhost`), `popup_blocked`,
 `unsupported`.
 
-## Browser support
+## Navigateurs
 
-Current Chrome, Edge, Firefox and Safari (iOS 15.4+) — `BroadcastChannel` and
+Versions actuelles de Chrome, Edge, Firefox et Safari (iOS 15.4 et plus) — `BroadcastChannel` et
 `MessageEvent.origin`.
 
-## License
+## Licence
 
 [MIT](LICENSE) © Qalebasse

@@ -1,10 +1,10 @@
 # @tano-africa/react-native
 
 [![npm](https://img.shields.io/npm/v/@tano-africa/react-native.svg)](https://www.npmjs.com/package/@tano-africa/react-native)
-[![license](https://img.shields.io/npm/l/@tano-africa/react-native.svg)](LICENSE)
+[![licence](https://img.shields.io/npm/l/@tano-africa/react-native.svg)](LICENSE)
 
-The [Tano](https://docs.tano.africa) identity verification journey in a React Native app, built on
-`react-native-webview`.
+Le parcours de vérification d'identité [Tano](https://docs.tano.africa) dans une application React
+Native, construit sur `react-native-webview`.
 
 ## Installation
 
@@ -12,44 +12,45 @@ The [Tano](https://docs.tano.africa) identity verification journey in a React Na
 npm install @tano-africa/react-native react-native-webview
 ```
 
-Then:
+Puis :
 
-- **iOS** — add `NSCameraUsageDescription` to `Info.plist`, then `pod install`.
-- **Android** — declare `android.permission.CAMERA` and request it before opening the journey
-  (for example with `react-native-permissions`).
+- **iOS** — ajoutez `NSCameraUsageDescription` à l'`Info.plist`, puis `pod install`.
+- **Android** — déclarez `android.permission.CAMERA` et demandez-la avant d'ouvrir le parcours
+  (par exemple avec `react-native-permissions`).
 
-React Native 0.73 or later, `react-native-webview` 13 or later.
+React Native 0.73 ou plus récent, `react-native-webview` 13 ou plus récent.
 
-## Usage
+## Utilisation
 
 ```tsx
 import { TanoVerification } from "@tano-africa/react-native";
 
 <TanoVerification
-  url={session.url} // created by your server (POST /v1/sessions)
+  url={session.url} // créée par votre serveur (POST /v1/sessions)
   onEvent={(event) => {
-    if (event.type === "completed") navigation.replace("Thanks"); // then read the case server-side
+    if (event.type === "completed") navigation.replace("Thanks"); // puis lisez le dossier côté serveur
     if (event.type === "ended") showRetry(event.reason);          // declined, expired, cancelled…
   }}
 />
 ```
 
-## Events
+## Événements
 
-| `type` | Payload |
+| `type` | Contenu |
 | --- | --- |
 | `ready` | — |
-| `step` | `step`: `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
+| `step` | `step` : `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
 | `completed` | — |
-| `ended` | `reason`: `declined`, `expired`, `invalid_link`, `later`, or `cancelled` when the screen closes first |
+| `ended` | `reason` : `declined`, `expired`, `invalid_link`, `later`, ou `cancelled` quand l'écran se ferme avant la fin |
 
-## Security
+## Sécurité
 
-- The camera is granted to the journey's origin only; navigation stays on that origin and external
-  links open in the system browser.
-- The web view runs incognito: nothing from the journey is kept on the device.
-- Events never carry a result or personal data — read the decision on your server.
+- La caméra n'est accordée qu'à l'origine du parcours ; la navigation reste sur cette origine et
+  les liens sortants s'ouvrent dans le navigateur du système.
+- La WebView fonctionne en navigation privée : rien du parcours n'est gardé sur l'appareil.
+- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+  serveur.
 
-## License
+## Licence
 
 [MIT](LICENSE) © Qalebasse

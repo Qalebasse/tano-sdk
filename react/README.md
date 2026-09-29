@@ -1,10 +1,10 @@
 # @tano-africa/react
 
 [![npm](https://img.shields.io/npm/v/@tano-africa/react.svg)](https://www.npmjs.com/package/@tano-africa/react)
-[![license](https://img.shields.io/npm/l/@tano-africa/react.svg)](LICENSE)
+[![licence](https://img.shields.io/npm/l/@tano-africa/react.svg)](LICENSE)
 
-The [Tano](https://docs.tano.africa) identity verification journey as a React component, built on
-[`@tano-africa/web`](https://www.npmjs.com/package/@tano-africa/web).
+Le parcours de vérification d'identité [Tano](https://docs.tano.africa) en composant React,
+construit sur [`@tano-africa/web`](https://www.npmjs.com/package/@tano-africa/web).
 
 ## Installation
 
@@ -12,12 +12,12 @@ The [Tano](https://docs.tano.africa) identity verification journey as a React co
 npm install @tano-africa/react
 ```
 
-React 18 or later.
+React 18 ou plus récent.
 
-## Usage
+## Utilisation
 
-Allow your origin in the Tano console (*Developers* → *Journey in your pages*), create the session
-on your server, then:
+Autorisez votre origine dans la console Tano (*Développeurs* → *Parcours dans vos pages*), créez
+la session sur votre serveur, puis :
 
 ```tsx
 import { TanoVerification } from "@tano-africa/react";
@@ -34,23 +34,23 @@ export function Verification({ url }: { url: string }) {
 }
 ```
 
-## Props
+## Propriétés
 
-| Prop | Type | Description |
+| Propriété | Type | Description |
 | --- | --- | --- |
-| `url` | `string` | Session URL. Changing it remounts the journey |
-| `onReady` | `() => void` | The journey is displayed |
-| `onStep` | `(step) => void` | A step starts |
-| `onCompleted` | `() => void` | Everything was sent — read the case on your server |
+| `url` | `string` | L'URL de la session. La changer remonte le parcours |
+| `onReady` | `() => void` | Le parcours est affiché |
+| `onStep` | `(step) => void` | Une étape commence |
+| `onCompleted` | `() => void` | Tout a été envoyé — lisez le dossier côté serveur |
 | `onEnded` | `(reason) => void` | `declined`, `expired`, `invalid_link`, `later` |
-| `onEvent` | `(event) => void` | Every event, raw |
-| `onExpired` | `() => Promise<string>` | Return a new session URL to resume in place |
-| `minHeight` | `number` | Minimum frame height in pixels |
-| `title` | `string` | Accessible title of the frame |
-| `className`, `style` | | Applied to the container |
+| `onEvent` | `(event) => void` | Tous les événements, tels quels |
+| `onExpired` | `() => Promise<string>` | Rendez une nouvelle URL de session pour reprendre sur place |
+| `minHeight` | `number` | Hauteur minimale du cadre, en pixels |
+| `title` | `string` | Titre accessible du cadre |
+| `className`, `style` | | Appliqués au conteneur |
 
-Callbacks are always read fresh: changing them does not reload the journey.
+Les rappels sont toujours lus à jour : les changer ne recharge pas le parcours.
 
-## License
+## Licence
 
 [MIT](LICENSE) © Qalebasse

@@ -1,3 +1,3 @@
 ## 0.1.0
 
-- Initial release: `TanoVerification` widget and `TanoEvent`.
+- Première version : le widget `TanoVerification` et `TanoEvent`.
