@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TanoWebError, checkJourneyUrl, handleReturn, launch } from "../src/index.js";
 
-const URL_PARCOURS = "https://parcours.tano.africa/#jeton";
+const JOURNEY_URL = "https://parcours.tano.africa/#jeton";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -23,22 +23,22 @@ describe("le lien du parcours", () => {
 describe("launch", () => {
   it("ouvre une fenêtre, et bascule dans l'onglet si elle est bloquée", () => {
     const { open } = fakePopup();
-    expect(launch({ url: URL_PARCOURS }).mode).toBe("popup");
+    expect(launch({ url: JOURNEY_URL }).mode).toBe("popup");
     expect(open).toHaveBeenCalledWith(
-      URL_PARCOURS,
+      JOURNEY_URL,
       "tano-journey",
       expect.stringContaining("popup"),
     );
 
     open.mockReturnValue(null);
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => {});
-    expect(launch({ url: URL_PARCOURS }).mode).toBe("redirect");
-    expect(assign).toHaveBeenCalledWith(URL_PARCOURS);
+    expect(launch({ url: JOURNEY_URL }).mode).toBe("redirect");
+    expect(assign).toHaveBeenCalledWith(JOURNEY_URL);
   });
 
   it("dit que la fenêtre est bloquée quand on refuse la bascule", () => {
     vi.spyOn(window, "open").mockReturnValue(null);
-    expect(() => launch({ url: URL_PARCOURS, fallbackToRedirect: false })).toThrow(/bloquée/);
+    expect(() => launch({ url: JOURNEY_URL, fallbackToRedirect: false })).toThrow(/bloquée/);
   });
 });
 
@@ -46,7 +46,7 @@ describe("le retour", () => {
   it("prévient l'onglet d'origine, qui confirme : la fenêtre se ferme", async () => {
     fakePopup();
     const onReturn = vi.fn();
-    const handle = launch({ url: URL_PARCOURS, onReturn });
+    const handle = launch({ url: JOURNEY_URL, onReturn });
     const close = vi.spyOn(window, "close").mockImplementation(() => {});
 
     await expect(handleReturn()).resolves.toBe("popup");
@@ -64,7 +64,7 @@ describe("le retour", () => {
   it("n'écoute plus une fois fermé", async () => {
     const { popup } = fakePopup();
     const onReturn = vi.fn();
-    launch({ url: URL_PARCOURS, onReturn }).close();
+    launch({ url: JOURNEY_URL, onReturn }).close();
     expect(popup.close).toHaveBeenCalled();
     await expect(handleReturn({ timeoutMs: 50 })).resolves.toBe("page");
     expect(onReturn).not.toHaveBeenCalled();

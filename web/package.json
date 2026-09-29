@@ -1,7 +1,7 @@
 {
   "name": "@tano-africa/web",
   "version": "0.1.0",
-  "description": "Le SDK navigateur de Tano : ouvrir le parcours de vérification et savoir quand il revient",
+  "description": "Official browser library for Tano: embed the identity verification journey in your page, or open it in a popup.",
   "license": "MIT",
   "type": "module",
   "exports": {

@@ -13,9 +13,9 @@ describe("TanoVerification", () => {
     expect(container.querySelector("iframe")?.src).toBe("https://verify.tano.africa/embed#jeton-1");
 
     rerender(<TanoVerification url="https://verify.tano.africa/#jeton-2" />);
-    const cadres = container.querySelectorAll("iframe");
-    expect(cadres).toHaveLength(1);
-    expect(cadres[0]?.src).toBe("https://verify.tano.africa/embed#jeton-2");
+    const frames = container.querySelectorAll("iframe");
+    expect(frames).toHaveLength(1);
+    expect(frames[0]?.src).toBe("https://verify.tano.africa/embed#jeton-2");
 
     unmount();
     expect(container.querySelector("iframe")).toBeNull();

@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:tano_flutter/tano_flutter.dart';
 
-const lien = String.fromEnvironment('TANO_URL', defaultValue: 'http://localhost:5188/?ecran=consentement');
+const journeyUrl = String.fromEnvironment('TANO_URL', defaultValue: 'http://localhost:5188/?ecran=consentement');
 
 void main() => runApp(const MaterialApp(home: Demo()));
 
@@ -15,7 +15,7 @@ class Demo extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         body: SafeArea(
           child: TanoVerification(
-            url: Uri.parse(lien),
+            url: Uri.parse(journeyUrl),
             onEvent: (event) => debugPrint('TANO_EVENT $event'),
           ),
         ),

@@ -37,12 +37,12 @@ def reply(status: int, body: object, **headers: str) -> HttpResponse:
 
 
 @pytest.fixture(autouse=True)
-def sans_attente(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def no_sleep(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setattr("tano_sdk.client.time.sleep", lambda _s: None)
     yield
 
 
-def test_la_signature_est_celle_de_l_api() -> None:
+def test_signature_matches_api_vector() -> None:
     """Vecteur calculé par tano-core (`expected_signature_v2`)."""
     assert (
         request_signature(
@@ -52,13 +52,13 @@ def test_la_signature_est_celle_de_l_api() -> None:
     )
 
 
-def test_une_cle_mal_formee_est_refusee() -> None:
+def test_malformed_key_is_rejected() -> None:
     with pytest.raises(TanoError):
         Tano("sk_test_123")
     assert Tano(KEY).environment == "sandbox"
 
 
-def test_une_creation_est_signee_sur_les_octets_envoyes() -> None:
+def test_create_signs_exact_bytes_sent() -> None:
     fake = Fake(reply(201, {"id": "case_1"}))
     tano = Tano(KEY, transport=fake, base_url="https://api.exemple/")
     assert tano.cases.create(flow_name="kyc", country="CI", external_ref="client-42")["id"] == (
@@ -77,7 +77,7 @@ def test_une_creation_est_signee_sur_les_octets_envoyes() -> None:
     assert len(call.headers["Idempotency-Key"]) == 36
 
 
-def test_une_lecture_n_est_pas_signee_et_porte_ses_filtres() -> None:
+def test_read_is_unsigned_and_carries_filters() -> None:
     fake = Fake(reply(200, {"data": [], "has_more": False, "next_cursor": None}))
     Tano(KEY, transport=fake).cases.list(status=["review", "decided"], country="CI", limit=5)
     assert fake.calls[0].url == (
@@ -87,18 +87,18 @@ def test_une_lecture_n_est_pas_signee_et_porte_ses_filtres() -> None:
     assert fake.calls[0].body is None
 
 
-def test_un_503_est_reessaye_avec_la_meme_cle_d_idempotence() -> None:
+def test_503_retried_with_same_idempotency_key() -> None:
     fake = Fake(reply(503, {}), reply(201, {"id": "sess_1", "url": "https://parcours/#t"}))
     session = Tano(KEY, transport=fake).sessions.create(
         case_id="case_1", return_url="https://client.example/retour"
     )
     assert session["id"] == "sess_1"
-    premier, second = fake.calls
-    assert premier.headers["Idempotency-Key"] == second.headers["Idempotency-Key"]
+    first, second = fake.calls
+    assert first.headers["Idempotency-Key"] == second.headers["Idempotency-Key"]
     assert json.loads(second.body or b"")["return_url"] == "https://client.example/retour"
 
 
-def test_une_erreur_de_l_api_garde_son_code() -> None:
+def test_api_error_keeps_its_code() -> None:
     fake = Fake(
         reply(
             400,
@@ -123,13 +123,13 @@ def test_une_erreur_de_l_api_garde_son_code() -> None:
     assert len(fake.calls) == 1
 
 
-def test_sans_reponse_apres_les_reessais() -> None:
+def test_no_response_after_retries() -> None:
     fake = Fake(OSError("coupé"), OSError("coupé"))
     with pytest.raises(TanoConnectionError):
         Tano(KEY, transport=fake, max_retries=1).cases.retrieve("case_1")
 
 
-def test_toutes_les_pages() -> None:
+def test_list_all_follows_pages() -> None:
     fake = Fake(
         reply(200, {"data": [{"id": "a"}], "has_more": True, "next_cursor": "a"}),
         reply(200, {"data": [{"id": "b"}], "has_more": False, "next_cursor": None}),
@@ -139,7 +139,7 @@ def test_toutes_les_pages() -> None:
     assert "cursor=a" in fake.calls[1].url
 
 
-def test_la_meme_requete_n_est_jamais_signee_deux_fois_pareil() -> None:
+def test_same_request_never_signed_twice_alike() -> None:
     fake = Fake(*(reply(201, {"id": f"s{i}"}) for i in range(3)))
     tano = Tano(KEY, transport=fake)
     for _ in range(3):
@@ -148,7 +148,7 @@ def test_la_meme_requete_n_est_jamais_signee_deux_fois_pareil() -> None:
     assert len({c.headers["X-Tano-Signature"] for c in fake.calls}) == 3
 
 
-def test_les_resultats_les_donnees_et_une_image() -> None:
+def test_results_data_and_image() -> None:
     fake = Fake(
         reply(200, {"state": "approved"}),
         reply(200, {"declared": {"surname": "KOUASSI"}}),
@@ -168,14 +168,14 @@ def test_les_resultats_les_donnees_et_une_image() -> None:
     ]
 
 
-def test_la_permission_manquante_se_dit() -> None:
+def test_missing_permission_is_reported() -> None:
     fake = Fake(reply(403, {"error": {"code": "key_permission_missing"}}))
     with pytest.raises(TanoApiError) as caught:
         Tano(KEY, transport=fake).cases.data("case_1")
     assert (caught.value.status, caught.value.code) == (403, "key_permission_missing")
 
 
-def test_decider_et_effacer() -> None:
+def test_decide_and_erase() -> None:
     fake = Fake(
         reply(201, {"id": "rdc_1", "outcome": "approve"}),
         reply(200, {"case_id": "case_1", "erased": {"images": 1}}),

@@ -8,7 +8,7 @@ import org.junit.Test
 
 class TanoEventTest {
     @Test
-    fun litLesEvenementsDuParcours() {
+    fun parsesJourneyEvents() {
         assertEquals(TanoEvent.Ready, TanoEvent.parse("""{"type":"tano:ready","version":1}"""))
         assertEquals(TanoEvent.Step("face"), TanoEvent.parse("""{"type":"tano:step","step":"face"}"""))
         assertEquals(TanoEvent.Completed, TanoEvent.parse("""{"type":"tano:completed"}"""))
@@ -16,14 +16,14 @@ class TanoEventTest {
     }
 
     @Test
-    fun ignoreCeQuiNEstPasUnEvenement() {
+    fun ignoresNonEvents() {
         assertNull(TanoEvent.parse("pas du json"))
         assertNull(TanoEvent.parse("""{"type":"tano:resize","height":800}"""))
         assertNull(TanoEvent.parse("""{"type":"tano:step"}"""))
     }
 
     @Test
-    fun nAdmetQueHttpsOuLocalhost() {
+    fun acceptsOnlyHttpsOrLocalhost() {
         assertTrue(TanoJourneyUrl.isAllowed("https", "verify.tano.africa"))
         assertTrue(TanoJourneyUrl.isAllowed("http", "localhost"))
         assertFalse(TanoJourneyUrl.isAllowed("http", "verify.tano.africa"))

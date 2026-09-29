@@ -1,7 +1,7 @@
 {
   "name": "@tano-africa/node",
   "version": "0.1.0",
-  "description": "Le SDK serveur de Tano pour Node.js : dossiers, sessions de parcours, webhooks",
+  "description": "Official Node.js library for the Tano identity verification API: cases, journey sessions, results, webhooks.",
   "license": "MIT",
   "type": "module",
   "engines": {

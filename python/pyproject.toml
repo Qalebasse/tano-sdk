@@ -1,8 +1,9 @@
 [project]
 name = "tano-sdk"
 version = "0.1.0"
-description = "Le SDK serveur de Tano pour Python : dossiers, sessions de parcours, webhooks"
+description = "Official Python library for the Tano identity verification API: cases, journey sessions, results, webhooks."
 readme = "README.md"
+keywords = ["tano", "kyc", "identity", "verification", "africa"]
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = []

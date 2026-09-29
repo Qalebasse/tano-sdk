@@ -21,26 +21,26 @@ final class DemoAppDelegate: UIResponder, UIApplicationDelegate {
 }
 
 final class DemoViewController: UIViewController {
-    private let journal = UILabel()
+    private let eventLog = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        journal.numberOfLines = 0
-        journal.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        journal.text = "Événements :"
-        journal.frame = view.bounds.insetBy(dx: 20, dy: 80)
-        view.addSubview(journal)
+        eventLog.numberOfLines = 0
+        eventLog.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        eventLog.text = "Événements :"
+        eventLog.frame = view.bounds.insetBy(dx: 20, dy: 80)
+        view.addSubview(eventLog)
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        guard presentedViewController == nil, journal.text == "Événements :" else { return }
+        guard presentedViewController == nil, eventLog.text == "Événements :" else { return }
         let argument = ProcessInfo.processInfo.arguments.dropFirst().first { $0.hasPrefix("http") }
-        let lien = URL(string: argument ?? "http://localhost:5188/?ecran=consentement")!
-        let verification = TanoVerificationViewController(url: lien) { [weak self] event in
+        let journeyURL = URL(string: argument ?? "http://localhost:5188/?ecran=consentement")!
+        let verification = TanoVerificationViewController(url: journeyURL) { [weak self] event in
             NSLog("TANO_EVENT %@", String(describing: event))
-            self?.journal.text = (self?.journal.text ?? "") + "\n" + String(describing: event)
+            self?.eventLog.text = (self?.eventLog.text ?? "") + "\n" + String(describing: event)
         }
         present(UINavigationController(rootViewController: verification), animated: true)
     }

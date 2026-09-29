@@ -1,93 +1,115 @@
 # @tano-africa/web
 
-Le SDK navigateur de Tano : afficher le parcours de vérification **dans votre page**, ou l'ouvrir
-dans une fenêtre, et savoir où en est la personne.
+[![npm](https://img.shields.io/npm/v/@tano-africa/web.svg)](https://www.npmjs.com/package/@tano-africa/web)
+[![license](https://img.shields.io/npm/l/@tano-africa/web.svg)](LICENSE)
 
-## Dans votre page (recommandé)
+The official browser library for [Tano](https://docs.tano.africa): run the identity verification
+journey **inside your page**, in a popup, or in the current tab — and follow its progress.
 
-1. Dans la console, page Développeurs, ajoutez votre origine aux **domaines autorisés**
-   (`https://votre-site.example`, et `http://localhost:5173` pour développer).
-2. Votre serveur crée la session et rend son `url`.
-3. La page affiche le parcours :
+- Embedded journey (`mount`) with an origin-verified handshake — it never renders on a site you did not allow
+- Popup or redirect (`launch`), with a return page that notifies the opening tab
+- Progress events, automatic height, expired-link renewal in place
+- Under 3 kB minified, zero dependencies, ESM and a `<script>` build
 
-```ts
-import { mount } from "@tano-africa/web";
-
-const parcours = mount("#verification", {
-  url,
-  onStep: (etape) => suivi(etape), // consent, document, face, uploading…
-  onCompleted: () => afficherMerci(), // puis lisez le dossier côté serveur
-  onEnded: (raison) => proposerDeRecommencer(raison), // declined, expired, invalid_link, later
-  // Le lien a expiré : un nouveau, et le parcours reprend dans le même cadre.
-  onExpired: () => fetch("/api/verification/lien").then((r) => r.json()).then((j) => j.url),
-});
-// parcours.destroy() pour le retirer.
-```
-
-Le parcours ne s'affiche qu'après une poignée de main avec votre page, dont le navigateur atteste
-l'origine : encadré par une page qui n'est pas dans votre liste, il refuse de s'afficher. La
-caméra lui est déléguée (`allow="camera"`), et à lui seul. En React : `@tano-africa/react`.
-
-## Dans une fenêtre ou l'onglet
+## Installation
 
 ```bash
 npm install @tano-africa/web
 ```
 
-ou, sans outil de build :
+Or without a bundler:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@tano-africa/web/dist/tano-web.global.js"></script>
-<!-- window.TanoWeb.launch(…), window.TanoWeb.handleReturn() -->
+<!-- window.TanoWeb.mount(…), window.TanoWeb.launch(…), window.TanoWeb.handleReturn() -->
 ```
 
-## 1. Votre serveur crée la session
+## Embed the journey in your page (recommended)
 
-Avec `return_url` : une page de **votre** site (HTTPS, sans `?` ni `#`).
+1. **Allow your origins** in the Tano console → *Developers* → *Journey in your pages*
+   (`https://www.your-site.com`; add `http://localhost:5173` for development).
+2. **Create a session on your server** (`POST /v1/sessions`) and return its `url` to the page.
+3. **Mount the journey**:
 
 ```ts
-const session = await tano.sessions.create({
-  case_id,
-  return_url: "https://votre-site.example/verification/retour",
+import { mount } from "@tano-africa/web";
+
+const journey = mount("#verification", {
+  url: session.url,
+  onStep: (step) => trackStep(step),        // consent, document, face, uploading…
+  onCompleted: () => showThankYou(),        // then read the case on your server
+  onEnded: (reason) => offerRetry(reason),  // declined, expired, invalid_link, later
+  // The link expired: return a fresh one and the journey resumes in the same frame.
+  onExpired: () => fetch("/api/verification/link").then((r) => r.json()).then((j) => j.url),
 });
-// renvoyez session.url à la page
+
+// journey.destroy() removes it.
 ```
 
-## 2. La page ouvre le parcours, au clic
+The camera is delegated to the journey frame only (`allow="camera"`), with no referrer. The journey
+completes a handshake with your page before rendering: the browser attests your page's origin,
+which must be in your allowed list — framed anywhere else, it shows a refusal and sends nothing.
+
+### `mount(target, options)`
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `url` | `string` | The session URL from `POST /v1/sessions`. Required |
+| `onReady` | `() => void` | The journey is displayed |
+| `onStep` | `(step: EmbedStep) => void` | A step starts |
+| `onCompleted` | `() => void` | Everything was sent |
+| `onEnded` | `(reason: EndReason) => void` | Stopped without sending |
+| `onEvent` | `(event: JourneyEvent) => void` | Every event, raw |
+| `onExpired` | `() => Promise<string>` | Return a new session URL to resume in place |
+| `autoHeight` | `boolean` | Follow the journey's height (default `true`) |
+| `minHeight` | `number` | Frame height in pixels (default `640`) |
+| `title` | `string` | Accessible title of the frame |
+
+Returns `{ iframe: HTMLIFrameElement, destroy(): void }`.
+
+## Popup or redirect
 
 ```ts
 import { launch } from "@tano-africa/web";
 
-bouton.addEventListener("click", async () => {
-  const { url } = await fetch("/api/verification", { method: "POST" }).then((r) => r.json());
-  launch({
-    url,
-    onReturn: () => rafraichirLeStatut(), // lisez le dossier côté serveur
-  });
+button.addEventListener("click", () => {
+  launch({ url: session.url, onReturn: () => refreshStatus() });
 });
 ```
 
-Le parcours s'ouvre dans une fenêtre. Si le navigateur la bloque, il s'ouvre dans l'onglet
-(`fallbackToRedirect: false` pour l'interdire). `mode: "redirect"` l'ouvre toujours dans l'onglet.
-
-## 3. La page de retour prévient l'onglet d'origine
+`launch` opens a popup (from a user gesture), or the current tab if the popup is blocked
+(`fallbackToRedirect: false` to forbid it; `mode: "redirect"` to always use the tab). Create the
+session with a `return_url` on your site; on that page:
 
 ```ts
 import { handleReturn } from "@tano-africa/web";
 
-const contexte = await handleReturn();
-if (contexte === "popup") {
-  // La fenêtre se ferme ; si le navigateur refuse, affichez « Vous pouvez fermer cette fenêtre ».
-} else {
-  // Le parcours avait été ouvert dans l'onglet même : affichez la suite ici.
-}
+const context = await handleReturn(); // "popup": this window closes · "page": continue here
 ```
 
-## Ce que le SDK ne fait pas
+## Events
 
-Il ne transporte **aucun résultat** : un message de navigateur se falsifie. La décision se lit côté
-serveur — webhook `case.decided`, ou `GET /v1/cases/{id}`.
+| Event | Payload |
+| --- | --- |
+| `tano:ready` | `version` |
+| `tano:step` | `step`: `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
+| `tano:completed` | — |
+| `tano:ended` | `reason`: `declined`, `expired`, `invalid_link`, `later` |
+| `tano:resize` | `height` |
 
-Le parcours se coupe de la page qui l'a ouvert (`Cross-Origin-Opener-Policy`), pour qu'aucune page
-tierce ne puisse le piloter : c'est pourquoi le retour passe par votre page, et pourquoi le SDK ne
-sait pas si la personne ferme la fenêtre sans terminer. Le webhook vous le dira à l'expiration.
+Events never carry a result or personal data. **Read the decision on your server** — webhook
+`case.decided`, or `GET /v1/cases/{id}/results`.
+
+## Errors
+
+`TanoWebError` with `code`: `invalid_url` (not HTTPS, except `localhost`), `popup_blocked`,
+`unsupported`.
+
+## Browser support
+
+Current Chrome, Edge, Firefox and Safari (iOS 15.4+) — `BroadcastChannel` and
+`MessageEvent.origin`.
+
+## License
+
+[MIT](LICENSE) © Qalebasse
