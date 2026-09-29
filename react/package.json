@@ -1,0 +1,35 @@
+{
+  "name": "@tano/react",
+  "version": "0.1.0",
+  "description": "Le parcours de vérification Tano, intégré dans une page React",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "types": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@tano/web": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.1.0",
+    "@types/react": "18.3.18",
+    "happy-dom": "16.5.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

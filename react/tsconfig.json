@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "types": [],
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@tano/web": ["../web/src/index.ts"]
+    }
+  },
+  "include": ["src", "tests"]
+}
