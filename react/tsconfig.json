@@ -7,7 +7,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@tanocompany/web": ["../web/src/index.ts"]
+      "@tano-africa/web": ["../web/src/index.ts"]
     }
   },
   "include": ["src", "tests"]

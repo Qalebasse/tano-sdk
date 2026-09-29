@@ -1,9 +1,9 @@
-# @tanocompany/react
+# @tano-africa/react
 
 Le parcours de vérification Tano, intégré dans une page React.
 
 ```tsx
-import { TanoVerification } from "@tanocompany/react";
+import { TanoVerification } from "@tano-africa/react";
 
 <TanoVerification
   url={session.url}                       // créée par votre serveur
