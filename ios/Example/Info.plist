@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key><string>africa.tano.demo</string>
+	<key>CFBundleExecutable</key><string>TanoDemo</string>
+	<key>CFBundleName</key><string>Tano Démo</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>0.1.0</string>
+	<key>CFBundleVersion</key><string>1</string>
+	<key>MinimumOSVersion</key><string>15.0</string>
+	<key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+	<key>UILaunchScreen</key><dict/>
+	<key>NSCameraUsageDescription</key><string>La caméra sert à photographier votre pièce d'identité et votre visage.</string>
+	<key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+</dict>
+</plist>

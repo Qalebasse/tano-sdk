@@ -49,3 +49,35 @@ jobs:
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest -q
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # Le SDK Android est déjà sur l'image Ubuntu de GitHub (ANDROID_HOME), licences comprises.
+      - run: ./gradlew --no-daemon :tano:testDebugUnitTest :demo:assembleDebug
+
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+# iOS : `swift test` dans ios/ (macOS). Pas de tâche ici — un exécuteur macOS coûte dix fois plus ;
+# la lecture des événements est éprouvée localement et l'application de démonstration sur simulateur.

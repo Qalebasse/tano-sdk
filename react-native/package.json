@@ -1,0 +1,25 @@
+{
+  "name": "@tano/react-native",
+  "version": "0.1.0",
+  "description": "Le parcours de vérification Tano dans une application React Native",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "types": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.73",
+    "react-native-webview": ">=13"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.18",
+    "react": "18.3.1",
+    "react-native-webview": "13.12.5"
+  }
+}
