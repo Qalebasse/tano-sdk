@@ -53,6 +53,23 @@ donnees = tano.cases.data(dossier["id"])
 type_, octets = tano.cases.image(dossier["id"], r["pieces"][0]["id"])
 ```
 
+## Décider d'un dossier en revue
+
+Avec une clé qui porte la permission « décisions ».
+
+```python
+tano.cases.decide(dossier["id"], outcome="approve", reason_code="identity_confirmed")
+tano.cases.decide(dossier["id"], outcome="resubmit", reason_code="selfie_unusable", steps=["face"])
+```
+
+## Effacer les données d'un dossier clos
+
+Permission « données personnelles ». La trace du dossier reste (étapes, verdicts, décisions).
+
+```python
+efface = tano.cases.erase(dossier["id"])["erased"]
+```
+
 ## Lire un dossier
 
 ```python

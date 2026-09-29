@@ -200,3 +200,37 @@ describe("les résultats d'un dossier", () => {
     });
   });
 });
+
+describe("agir sur un dossier", () => {
+  it("décide et efface, signés, sur les bonnes routes", async () => {
+    const { fetch, calls } = fakeFetch(
+      json(201, {
+        id: "rdc_1",
+        case_id: "case_1",
+        outcome: "resubmit",
+        case_outcome_notified: "resubmit",
+      }),
+      json(200, {
+        case_id: "case_1",
+        erased: { images: 2, declared: 1, identity: 1, documents: 1, review: 0 },
+      }),
+    );
+    const tano = new Tano({ apiKey: KEY, fetch });
+    await tano.cases.decide("case_1", {
+      outcome: "resubmit",
+      reason_code: "selfie_unusable",
+      steps: ["face"],
+    });
+    expect((await tano.cases.erase("case_1")).erased.images).toBe(2);
+    expect(calls.map((c) => c.url)).toEqual([
+      "https://api.tano.africa/v1/cases/case_1/decision",
+      "https://api.tano.africa/v1/cases/case_1/erasure",
+    ]);
+    expect(JSON.parse(calls[0]?.init.body as string)).toEqual({
+      outcome: "resubmit",
+      reason_code: "selfie_unusable",
+      steps: ["face"],
+    });
+    for (const call of calls) expect(headersOf(call)["X-Tano-Signature"]).toMatch(/^v2=/);
+  });
+});

@@ -243,6 +243,38 @@ class Cases:
         kind = _header(response.headers, "Content-Type") or "application/octet-stream"
         return kind, response.body
 
+    def decide(
+        self,
+        case_id: str,
+        *,
+        outcome: str,
+        reason_code: str,
+        steps: Iterable[str] | None = None,
+        comment: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Trancher un dossier **en revue** : `approve`, `reject` ou `resubmit` (avec `steps` :
+        `document`, `face`). Permission `decisions`. Le dossier conclut ensuite : webhook
+        `case.decided` ou `case.resubmission_requested`."""
+        body: dict[str, Any] = {"outcome": outcome, "reason_code": reason_code}
+        if steps is not None:
+            body["steps"] = list(steps)
+        if comment is not None:
+            body["comment"] = comment
+        return self._client.request(  # type: ignore[no-any-return]
+            "POST",
+            f"/v1/cases/{quote(case_id, safe='')}/decision",
+            body,
+            idempotency_key=idempotency_key,
+        )
+
+    def erase(self, case_id: str) -> dict[str, Any]:
+        """Effacer les données personnelles d'un dossier **clos**. Permission `personal_data`.
+        La trace du dossier reste ; webhook `case.personal_data_erased`."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "POST", f"/v1/cases/{quote(case_id, safe='')}/erasure", {}
+        )
+
     def list(
         self,
         *,
