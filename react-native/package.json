@@ -6,11 +6,12 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "types": "tsc --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -21,5 +22,10 @@
     "@types/react": "18.3.18",
     "react": "18.3.1",
     "react-native-webview": "13.12.5"
+  },
+  "homepage": "https://docs.tano.africa",
+  "keywords": ["tano", "kyc", "identity", "verification", "africa"],
+  "publishConfig": {
+    "access": "public"
   }
 }
