@@ -53,6 +53,23 @@ const donnees = await tano.cases.data(dossier.id); // identité lue, déclaré, 
 const image = await tano.cases.image(dossier.id, r.pieces[0].id); // { contentType, data: Buffer }
 ```
 
+## Décider d'un dossier en revue
+
+Avec une clé qui porte la permission « décisions ».
+
+```ts
+await tano.cases.decide(dossier.id, { outcome: "approve", reason_code: "identity_confirmed" });
+await tano.cases.decide(dossier.id, { outcome: "resubmit", reason_code: "selfie_unusable", steps: ["face"] });
+```
+
+## Effacer les données d'un dossier clos
+
+Permission « données personnelles ». La trace du dossier reste (étapes, verdicts, décisions).
+
+```ts
+const { erased } = await tano.cases.erase(dossier.id);
+```
+
 ## Lire un dossier
 
 ```ts

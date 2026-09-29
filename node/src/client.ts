@@ -6,6 +6,9 @@ import type {
   Case,
   CaseCreateParams,
   CaseData,
+  CaseDecisionParams,
+  CaseDecisionRecorded,
+  CaseErasure,
   CaseImage,
   CaseListParams,
   CaseResults,
@@ -226,6 +229,28 @@ class Cases {
       `/v1/cases/${encodeURIComponent(id)}/images/${encodeURIComponent(pieceId)}`,
       options,
     );
+  }
+
+  /** Trancher un dossier **en revue** : approuver, refuser, ou demander une reprise. Permission
+   * `decisions`. Le dossier conclut ensuite : webhook `case.decided` ou
+   * `case.resubmission_requested`. Hors revue : `TanoApiError` `case_not_in_review`. */
+  decide(
+    id: string,
+    params: CaseDecisionParams,
+    options?: RequestOptions,
+  ): Promise<CaseDecisionRecorded> {
+    return this.client.request(
+      "POST",
+      `/v1/cases/${encodeURIComponent(id)}/decision`,
+      params,
+      options,
+    );
+  }
+
+  /** Effacer les données personnelles d'un dossier **clos**. Permission `personal_data`. La
+   * trace du dossier reste ; webhook `case.personal_data_erased`. */
+  erase(id: string, options?: RequestOptions): Promise<CaseErasure> {
+    return this.client.request("POST", `/v1/cases/${encodeURIComponent(id)}/erasure`, {}, options);
   }
 
   /** Une page de dossiers, du plus récent au plus ancien. */
