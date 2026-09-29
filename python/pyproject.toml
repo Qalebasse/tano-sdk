@@ -5,8 +5,25 @@ description = "Bibliothèque Python officielle de l'API de vérification d'ident
 readme = "README.md"
 keywords = ["tano", "kyc", "identity", "verification", "africa"]
 license = { text = "MIT" }
+authors = [{ name = "Qalebasse", email = "support@tano.africa" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 requires-python = ">=3.9"
 dependencies = []
+
+[project.urls]
+Homepage = "https://docs.tano.africa"
+Documentation = "https://docs.tano.africa"
+Source = "https://github.com/Qalebasse/tano-sdk/tree/main/python"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.8", "mypy>=1.13"]

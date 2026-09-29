@@ -23,3 +23,5 @@ flutter/example/**/Generated*
 flutter/example/android/local.properties
 flutter/example/android/.gradle/
 flutter/example/*.iml
+.build/
+.swiftpm/
