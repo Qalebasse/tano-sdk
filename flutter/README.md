@@ -9,12 +9,8 @@ Flutter 3.24 ou plus récent · Dart 3.5 ou plus récent · Android API 24+ · i
 
 ## Installation
 
-En attendant la publication sur pub.dev, dépendez du paquet par chemin ou par git :
-
-```yaml
-dependencies:
-  tano_flutter:
-    path: chemin/vers/tano-sdk/flutter
+```bash
+flutter pub add tano_flutter
 ```
 
 - **iOS** — ajoutez `NSCameraUsageDescription` à l'`Info.plist`.

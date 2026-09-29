@@ -9,15 +9,13 @@ Android 7.0 (API 24) ou plus récent · Kotlin 2.0 ou plus récent · AndroidX.
 
 ## Installation
 
-Incluez le module `tano` dans votre build, en attendant la publication de l'artefact Maven :
+Depuis Maven Central :
 
 ```kotlin
-// settings.gradle.kts
-include(":tano")
-project(":tano").projectDir = file("chemin/vers/tano-sdk/android/tano")
-
 // app/build.gradle.kts
-dependencies { implementation(project(":tano")) }
+dependencies {
+    implementation("africa.tano:tano-android:0.1.0")
+}
 ```
 
 Le module déclare `INTERNET` et `CAMERA`, et demande la caméra au moment où le parcours en a besoin.

@@ -10,9 +10,9 @@ Les bibliothèques officielles de [Tano](https://docs.tano.africa) — la vérif
 | [`@tano-africa/web`](web) | Navigateur | `npm install @tano-africa/web` |
 | [`@tano-africa/react`](react) | React | `npm install @tano-africa/react` |
 | [`@tano-africa/react-native`](react-native) | React Native | `npm install @tano-africa/react-native react-native-webview` |
-| [`TanoSDK`](ios) | iOS (Swift) | Swift Package Manager |
-| [`tano-android`](android) | Android (Kotlin) | Module Gradle |
-| [`tano_flutter`](flutter) | Flutter | Paquet pub |
+| [`TanoSDK`](ios) | iOS (Swift) | Swift Package Manager : `https://github.com/Qalebasse/tano-sdk` |
+| [`africa.tano:tano-android`](android) | Android (Kotlin) | `implementation("africa.tano:tano-android:0.1.0")` |
+| [`tano_flutter`](flutter) | Flutter | `flutter pub add tano_flutter` |
 
 ## Comment s'articule une intégration
 
@@ -52,7 +52,7 @@ Signalez une vulnérabilité à **security@tano.africa**, sans ouvrir de ticket 
 ```bash
 pnpm install && pnpm lint && pnpm types && pnpm test && pnpm build      # paquets JavaScript
 cd python && uv sync && uv run ruff check . && uv run mypy && uv run pytest
-cd ios && swift test
+swift test                                   # paquet Swift (manifeste à la racine)
 cd android && ./gradlew :tano:testDebugUnitTest :demo:assembleDebug
 cd flutter && flutter analyze && flutter test
 ```

@@ -79,5 +79,5 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-# iOS : `swift test` dans ios/ (macOS). Pas de tâche ici — un exécuteur macOS coûte dix fois plus ;
+# iOS : `swift test` à la racine (macOS). Pas de tâche ici — un exécuteur macOS coûte dix fois plus ;
 # la lecture des événements est éprouvée localement et l'application de démonstration sur simulateur.

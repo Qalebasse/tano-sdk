@@ -9,8 +9,12 @@ iOS 15 ou plus récent · Swift 5.9 ou plus récent · Xcode 15 ou plus récent.
 
 ## Installation
 
-Swift Package Manager, produit `TanoSDK`. En attendant le dépôt public du paquet Swift, ajoutez
-ce dossier `ios/` comme paquet local (*File → Add Package Dependencies → Add Local*).
+Swift Package Manager : dans Xcode, *File → Add Package Dependencies*, adresse
+`https://github.com/Qalebasse/tano-sdk`, produit `TanoSDK`. Ou dans un `Package.swift` :
+
+```swift
+.package(url: "https://github.com/Qalebasse/tano-sdk", from: "0.1.0")
+```
 
 Ajoutez à l'`Info.plist` de l'application :
 
