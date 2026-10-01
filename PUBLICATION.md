@@ -86,11 +86,14 @@ flutter pub publish                              # compte Google ; irréversible
 
 ## PyPI
 
-Compte sur https://pypi.org, double authentification, jeton d'API (portée : tout le compte pour la
-première publication, puis limité au projet `tano-sdk`).
+Par Trusted Publishing : GitHub Actions publie, sans jeton. Une fois, sur pypi.org
+(*Publishing → Add a new pending publisher*, onglet GitHub) : projet `tano-sdk`, propriétaire
+`Qalebasse`, dépôt `tano-sdk`, workflow `publish-pypi.yml`, environnement `pypi`.
+
+À chaque version, après avoir fusionné la version de `python/pyproject.toml` sur `main` :
 
 ```bash
-cd python
-uv build
-uv publish --token <jeton>
+git tag python-v0.1.0 && git push origin python-v0.1.0
 ```
+
+Le workflow vérifie que l'étiquette correspond à la version, relance les tests, construit et publie.

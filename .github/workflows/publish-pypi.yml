@@ -1,0 +1,45 @@
+# Publication du SDK Python sur PyPI, par Trusted Publishing : aucun jeton stocké.
+# Déclenchée par une étiquette `python-v<version>` (par exemple python-v0.1.0), qui doit
+# correspondre à la version de python/pyproject.toml.
+
+name: publish-pypi
+
+on:
+  push:
+    tags: ["python-v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Vérifier que l'étiquette correspond à la version
+        run: |
+          version=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)
+          [ "python-v$version" = "$GITHUB_REF_NAME" ] || { echo "Étiquette $GITHUB_REF_NAME, version $version"; exit 1; }
+      - run: uv sync
+      - run: uv run ruff check . && uv run mypy && uv run pytest -q
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distribution
+          path: python/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distribution
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
