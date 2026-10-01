@@ -46,7 +46,7 @@ Transport = Callable[[HttpRequest], HttpResponse]
 
 
 def urllib_transport(request: HttpRequest) -> HttpResponse:
-    prepared = urllib.request.Request(  # noqa: S310 — l'adresse vient de la configuration
+    prepared = urllib.request.Request(  # noqa: S310 (l'adresse vient de la configuration)
         request.url, data=request.body, method=request.method, headers=dict(request.headers)
     )
     try:
@@ -96,7 +96,7 @@ class Tano:
 
         La signature ne porte que sur l'horodatage, la méthode, la cible et le corps : deux
         requêtes identiques dans la même seconde auraient la même, et l'API refuse une signature
-        déjà vue. Un réessai rapide prend donc la seconde suivante — l'API tolère cinq minutes.
+        déjà vue. Un réessai rapide prend donc la seconde suivante ; l'API tolère cinq minutes.
         """
         key = hashlib.sha256(f"{method} {target} ".encode() + payload).hexdigest()
         now = int(time.time())

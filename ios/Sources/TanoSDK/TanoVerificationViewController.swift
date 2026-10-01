@@ -76,7 +76,7 @@ public final class TanoVerificationViewController: UIViewController, WKUIDelegat
         onEvent(event)
     }
 
-    // MARK: Caméra — accordée à l'origine du parcours seulement.
+    // MARK: Caméra, accordée à l'origine du parcours seulement.
 
     public func webView(
         _ webView: WKWebView,
@@ -90,7 +90,7 @@ public final class TanoVerificationViewController: UIViewController, WKUIDelegat
         decisionHandler(sameHost && sameScheme && type == .camera ? .grant : .deny)
     }
 
-    // MARK: Navigation — le parcours reste dans son origine.
+    // MARK: Navigation, le parcours reste dans son origine.
 
     public func webView(
         _ webView: WKWebView,

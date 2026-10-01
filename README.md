@@ -1,6 +1,6 @@
 # SDK Tano
 
-Les bibliothèques officielles de [Tano](https://docs.tano.africa) — la vérification d'identité
+Les bibliothèques officielles de [Tano](https://docs.tano.africa), la vérification d'identité
 (KYC) pensée pour l'Afrique.
 
 | Paquet | Plateforme | Installation |
@@ -24,12 +24,12 @@ Les bibliothèques officielles de [Tano](https://docs.tano.africa) — la vérif
  Votre page web / votre application ──(url)──▶ Parcours de vérification Tano (hébergé, intégré ou dans l'app)
 ```
 
-1. **Serveur** — ouvrez un dossier et une session avec un SDK serveur. La clé d'API ne quitte
+1. **Serveur** : ouvrez un dossier et une session avec un SDK serveur. La clé d'API ne quitte
    jamais votre serveur.
-2. **Client** — ouvrez le parcours avec l'`url` de la session : dans votre page
+2. **Client** : ouvrez le parcours avec l'`url` de la session : dans votre page
    (`@tano-africa/web`, `@tano-africa/react`), dans une fenêtre, ou dans votre application
    mobile (iOS, Android, Flutter, React Native).
-3. **Décision** — lisez-la sur votre serveur : webhook `case.decided`, ou `cases.results(id)`.
+3. **Décision** : lisez-la sur votre serveur : webhook `case.decided`, ou `cases.results(id)`.
 
 Les SDK clients ne rapportent que l'avancement du parcours (`ready`, `step`, `completed`,
 `ended`). Ils ne transportent jamais de résultat ni de donnée personnelle : tout ce qui passe par

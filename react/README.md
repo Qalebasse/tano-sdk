@@ -41,7 +41,7 @@ export function Verification({ url }: { url: string }) {
 | `url` | `string` | L'URL de la session. La changer remonte le parcours |
 | `onReady` | `() => void` | Le parcours est affiché |
 | `onStep` | `(step) => void` | Une étape commence |
-| `onCompleted` | `() => void` | Tout a été envoyé — lisez le dossier côté serveur |
+| `onCompleted` | `() => void` | Tout a été envoyé ; lisez le dossier côté serveur |
 | `onEnded` | `(reason) => void` | `declined`, `expired`, `invalid_link`, `later` |
 | `onEvent` | `(event) => void` | Tous les événements, tels quels |
 | `onExpired` | `() => Promise<string>` | Rendez une nouvelle URL de session pour reprendre sur place |

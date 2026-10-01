@@ -78,7 +78,7 @@ export class Tano {
    * L'horodatage à signer. La signature ne porte que sur l'horodatage, la méthode, la cible et le
    * corps : deux requêtes identiques dans la même seconde auraient la même, et l'API refuse une
    * signature déjà vue. Un réessai rapide, ou deux sessions demandées ensemble pour un même
-   * dossier, prennent donc la seconde suivante — l'API tolère cinq minutes d'écart.
+   * dossier, prennent donc la seconde suivante ; l'API tolère cinq minutes d'écart.
    */
   #timestamp(method: string, target: string, payload: string): number {
     const id = createHash("sha256").update(`${method} ${target} `).update(payload).digest("hex");
