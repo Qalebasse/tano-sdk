@@ -140,7 +140,7 @@ function listen(popup: Window, options: LaunchOptions): JourneyHandle {
 /**
  * À appeler sur votre page de retour. Rend `popup` si un onglet attendait ce retour (la fenêtre
  * tente alors de se fermer ; si le navigateur refuse, affichez « Vous pouvez fermer cette
- * fenêtre »), `page` sinon — le parcours avait été ouvert dans l'onglet même, continuez-y.
+ * fenêtre »), `page` sinon : le parcours avait été ouvert dans l'onglet même, continuez-y.
  */
 export function handleReturn(options: HandleReturnOptions = {}): Promise<ReturnContext> {
   if (typeof BroadcastChannel === "undefined") return Promise.resolve("page");

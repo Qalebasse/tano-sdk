@@ -1,7 +1,7 @@
 # Publier les SDK
 
 Chaque registre a sa procédure. Les numéros de version se tiennent à jour dans les fichiers
-indiqués ; une version publiée ne se republie jamais — on incrémente.
+indiqués ; une version publiée ne se republie jamais : on incrémente.
 
 | Registre | Paquet | Version dans |
 | --- | --- | --- |
@@ -74,7 +74,7 @@ Central en 10 à 30 minutes.
 
 ## pub.dev
 
-Recommandé, une fois : un **éditeur vérifié** `tano.africa` — vérifier le domaine dans Google
+Recommandé, une fois : un **éditeur vérifié** `tano.africa`. Vérifier le domaine dans Google
 Search Console, puis *pub.dev → Create publisher*. Après la première publication, transférer le
 paquet à cet éditeur (*Admin* du paquet).
 

@@ -62,7 +62,7 @@ fermeture avant la fin).
   les liens sortants s'ouvrent dans le navigateur.
 - Le mode « envoyer une photo » du parcours utilise le sélecteur de fichiers du système.
 - Le cache et le stockage de la WebView sont vidés à la fermeture de l'écran.
-- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+- Aucun événement ne porte de résultat ni de donnée personnelle : lisez la décision sur votre
   serveur.
 
 ## Développement

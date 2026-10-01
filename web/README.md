@@ -3,9 +3,9 @@
 [![npm](https://img.shields.io/npm/v/@tano-africa/web.svg)](https://www.npmjs.com/package/@tano-africa/web)
 [![licence](https://img.shields.io/npm/l/@tano-africa/web.svg)](LICENSE)
 
-La bibliothèque navigateur officielle de [Tano](https://docs.tano.africa) : le parcours de
-vérification d'identité **dans votre page**, dans une fenêtre ou dans l'onglet — et son
-avancement.
+La bibliothèque navigateur officielle de [Tano](https://docs.tano.africa). Elle affiche le parcours
+de vérification d'identité **dans votre page**, dans une fenêtre ou dans l'onglet, et vous tient
+informé de son avancement.
 
 - Parcours intégré (`mount`), avec une poignée de main vérifiée par origine : il ne s'affiche jamais sur un site que vous n'avez pas autorisé
 - Fenêtre ou redirection (`launch`), avec une page de retour qui prévient l'onglet d'origine
@@ -49,7 +49,7 @@ const journey = mount("#verification", {
 
 La caméra n'est déléguée qu'au cadre du parcours (`allow="camera"`), sans référent. Le parcours
 fait une poignée de main avec votre page avant de s'afficher : le navigateur atteste l'origine de
-votre page, qui doit figurer dans votre liste — encadré ailleurs, il affiche un refus et n'envoie
+votre page, qui doit figurer dans votre liste. Encadré ailleurs, il affiche un refus et n'envoie
 rien.
 
 ### `mount(target, options)`
@@ -95,12 +95,12 @@ const context = await handleReturn(); // "popup" : la fenêtre se ferme · "page
 | --- | --- |
 | `tano:ready` | `version` |
 | `tano:step` | `step` : `consent`, `applicant`, `questionnaire`, `document`, `face`, `check`, `uploading`, `help` |
-| `tano:completed` | — |
+| `tano:completed` | aucun |
 | `tano:ended` | `reason` : `declined`, `expired`, `invalid_link`, `later` |
 | `tano:resize` | `height` |
 
 Aucun événement ne porte de résultat ni de donnée personnelle. **Lisez la décision sur votre
-serveur** — webhook `case.decided`, ou `GET /v1/cases/{id}/results`.
+serveur** : webhook `case.decided`, ou `GET /v1/cases/{id}/results`.
 
 ## Erreurs
 
@@ -109,7 +109,7 @@ serveur** — webhook `case.decided`, ou `GET /v1/cases/{id}/results`.
 
 ## Navigateurs
 
-Versions actuelles de Chrome, Edge, Firefox et Safari (iOS 15.4 et plus) — `BroadcastChannel` et
+Versions actuelles de Chrome, Edge, Firefox et Safari (iOS 15.4 et plus), qui gèrent `BroadcastChannel` et
 `MessageEvent.origin`.
 
 ## Licence

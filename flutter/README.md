@@ -13,8 +13,8 @@ Flutter 3.24 ou plus récent · Dart 3.5 ou plus récent · Android API 24+ · i
 flutter pub add tano_flutter
 ```
 
-- **iOS** — ajoutez `NSCameraUsageDescription` à l'`Info.plist`.
-- **Android** — déclarez `android.permission.CAMERA` et demandez-la avant d'ouvrir le parcours
+- **iOS** : ajoutez `NSCameraUsageDescription` à l'`Info.plist`.
+- **Android** : déclarez `android.permission.CAMERA` et demandez-la avant d'ouvrir le parcours
   (par exemple avec `permission_handler`).
 
 ## Utilisation
@@ -48,7 +48,7 @@ est retiré avant la fin.
 - La caméra est accordée à la demande ; la navigation reste sur l'origine du parcours et les liens
   sortants s'ouvrent dans le navigateur du système.
 - Le cache et le stockage local sont vidés quand le widget est retiré.
-- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+- Aucun événement ne porte de résultat ni de donnée personnelle : lisez la décision sur votre
   serveur.
 
 ## Exemple

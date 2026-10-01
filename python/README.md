@@ -39,7 +39,7 @@ session = tano.sessions.create(
     locale="fr",
     return_url="https://votre-site.example/verification/terminee",
 )
-print(session["url"])  # rendue une seule fois — ne la stockez pas
+print(session["url"])  # rendue une seule fois, ne la stockez pas
 
 results = tano.cases.results(case["id"])
 if results["state"] == "approved":
@@ -50,7 +50,7 @@ if results["state"] == "approved":
 
 ```python
 Tano(
-    api_key,  # obligatoire — l'environnement se lit dans le préfixe de la clé
+    api_key,  # obligatoire ; l'environnement se lit dans le préfixe de la clé
     base_url="https://api.tano.africa",
     timeout=30.0,  # secondes, par tentative
     max_retries=2,
@@ -65,8 +65,8 @@ Tano(
 | `cases.create(flow_name, country, external_ref=None, declared=None, idempotency_key=None)` | `POST /v1/cases` | Signée |
 | `cases.retrieve(case_id)` | `GET /v1/cases/{id}` | État, étapes et décision |
 | `cases.list(q, external_ref, status, country, created_after, created_before, limit, cursor)` | `GET /v1/cases` | Une page : `data`, `has_more`, `next_cursor` |
-| `cases.list_all(**filters)` | — | Parcourt toutes les pages |
-| `cases.results(case_id)` | `GET /v1/cases/{id}/results` | `state`, décision, reprise, contrôles, pièces — sans donnée personnelle |
+| `cases.list_all(**filters)` | toutes les pages | Parcourt toutes les pages |
+| `cases.results(case_id)` | `GET /v1/cases/{id}/results` | `state`, décision, reprise, contrôles, pièces, sans donnée personnelle |
 | `cases.data(case_id)` | `GET /v1/cases/{id}/data` | Données personnelles. Permission `personal_data` ; chaque lecture est journalisée |
 | `cases.image(case_id, piece_id)` | `GET /v1/cases/{id}/images/{piece_id}` | `(content_type, bytes)`. Permission `personal_data` |
 | `cases.decide(case_id, outcome, reason_code, steps=None, comment=None)` | `POST /v1/cases/{id}/decision` | `approve`, `reject` ou `resubmit` un dossier en revue. Permission `decisions` |

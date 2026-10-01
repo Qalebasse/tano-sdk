@@ -1,4 +1,4 @@
-# Journal des versions — paquets npm
+# Journal des versions des paquets npm
 
 ## 0.1.1
 

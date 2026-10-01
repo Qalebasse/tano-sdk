@@ -43,7 +43,7 @@ const session = await tano.sessions.create({
   locale: "fr",
   return_url: "https://votre-site.example/verification/terminee",
 });
-console.log(session.url); // rendue une seule fois — ne la stockez pas
+console.log(session.url); // rendue une seule fois, ne la stockez pas
 
 // 3. Plus tard, lire l'issue.
 const results = await tano.cases.results(kase.id);
@@ -56,7 +56,7 @@ if (results.state === "approved") {
 
 ```ts
 new Tano({
-  apiKey: string,          // obligatoire — l'environnement se lit dans le préfixe de la clé
+  apiKey: string,          // obligatoire ; l'environnement se lit dans le préfixe de la clé
   baseUrl?: string,        // https://api.tano.africa par défaut
   timeoutMs?: number,      // par tentative, 30 000 par défaut
   maxRetries?: number,     // 2 par défaut
@@ -75,8 +75,8 @@ new Tano({
 | `cases.create(params, options?)` | `POST /v1/cases` | Signée. `flow_name`, `country`, `external_ref?`, `declared?` |
 | `cases.retrieve(id)` | `GET /v1/cases/{id}` | État, étapes et décision |
 | `cases.list(params?)` | `GET /v1/cases` | `q`, `external_ref`, `status`, `country`, `created_after`, `created_before`, `limit`, `cursor` |
-| `cases.listAll(params?)` | — | Itérateur asynchrone sur toutes les pages |
-| `cases.results(id)` | `GET /v1/cases/{id}/results` | `state`, décision, reprise, contrôles, pièces — sans donnée personnelle |
+| `cases.listAll(params?)` | toutes les pages | Itérateur asynchrone sur toutes les pages |
+| `cases.results(id)` | `GET /v1/cases/{id}/results` | `state`, décision, reprise, contrôles, pièces, sans donnée personnelle |
 | `cases.data(id)` | `GET /v1/cases/{id}/data` | Données personnelles. Permission `personal_data` ; chaque lecture est journalisée |
 | `cases.image(id, pieceId)` | `GET /v1/cases/{id}/images/{pieceId}` | `{ contentType, data: Buffer }`. Permission `personal_data` |
 | `cases.decide(id, params)` | `POST /v1/cases/{id}/decision` | `approve`, `reject` ou `resubmit` un dossier en revue. Permission `decisions` |
@@ -137,7 +137,7 @@ aussi `external_ref`, `flow_name` et `environment`.
 
 | Classe | Quand | Champs utiles |
 | --- | --- | --- |
-| `TanoApiError` | L'API a répondu une erreur | `status`, `type`, `code` (stable — testez-le), `field`, `requestId`, `docUrl` |
+| `TanoApiError` | L'API a répondu une erreur | `status`, `type`, `code` (stable, à tester), `field`, `requestId`, `docUrl` |
 | `TanoConnectionError` | Pas de réponse après les réessais | Rejouer avec la même `idempotencyKey` est sans risque |
 | `WebhookSignatureError` | Une livraison n'a pas passé la vérification | Répondez `401` |
 | `TanoError` | Classe de base, par exemple une clé mal formée | |

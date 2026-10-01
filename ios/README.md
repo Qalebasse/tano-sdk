@@ -59,7 +59,7 @@ present(UINavigationController(rootViewController: verification), animated: true
 - La caméra n'est accordée qu'à l'origine du parcours ; la navigation reste sur cette origine et
   les liens sortants s'ouvrent dans Safari.
 - La WebView n'a pas de stockage persistant : rien du parcours n'est gardé sur l'appareil.
-- Aucun événement ne porte de résultat ni de donnée personnelle — lisez la décision sur votre
+- Aucun événement ne porte de résultat ni de donnée personnelle : lisez la décision sur votre
   serveur.
 
 ## Exemple
