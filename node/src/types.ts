@@ -264,7 +264,25 @@ export type SignerStatus =
   | "signed"
   | "declined";
 
-export type FieldKind = "signature" | "initials" | "date" | "text" | "checkbox" | "mention";
+export type FieldKind =
+  | "signature"
+  | "initials"
+  | "date"
+  | "text"
+  | "checkbox"
+  | "mention"
+  | "radio"
+  | "signer_name"
+  | "signer_email"
+  | "read_only_text";
+
+export type DateFormat =
+  | "dd/MM/yyyy"
+  | "dd-MM-yyyy"
+  | "dd.MM.yyyy"
+  | "yyyy-MM-dd"
+  | "MM/dd/yyyy"
+  | "dd MMMM yyyy";
 
 /** Un champ placé sur une page, en points PDF depuis le coin **bas gauche** de la page. */
 export interface SignatureFieldParams {
@@ -279,8 +297,28 @@ export interface SignatureFieldParams {
   height: number;
   /** `true` par défaut. */
   required?: boolean;
-  /** Pour `kind: "mention"` : la phrase à recopier, par exemple « Lu et approuvé ». */
+  /** Pour `kind: "mention"` : la phrase à recopier, par exemple « Lu et approuvé » ; `%date%` y
+   * devient la date du jour. */
   mention?: string;
+  /** `text`, `checkbox`, `radio` : le libellé montré au signataire. */
+  label?: string;
+  /** `text` : de 1 à 500, 200 par défaut. */
+  max_length?: number;
+  /** `text` : la valeur proposée, que le signataire peut changer. */
+  default_value?: string;
+  /** `date` : `dd/MM/yyyy` par défaut ; `dd MMMM yyyy` écrit le mois en toutes lettres. */
+  date_format?: DateFormat;
+  /** `signature` : `detailed` (nom, date, heure) par défaut, ou `minimal` (le nom seul). */
+  layout?: "minimal" | "detailed";
+  /** `signature` : un motif inscrit sous la signature, 150 caractères au plus. */
+  reason?: string;
+  /** `radio` : le groupe de l'option (deux options au moins) et sa valeur. */
+  group?: string;
+  value?: string;
+  /** `signer_name` : `full` par défaut, `given` ou `family`. */
+  name_format?: "full" | "given" | "family";
+  /** `read_only_text` : le texte inscrit tel quel. */
+  text?: string;
 }
 
 export interface SignerParams {
@@ -334,6 +372,8 @@ export interface SignatureRequestSigner {
   readonly name: string | null;
   readonly notified_at: string | null;
   readonly signed_at: string | null;
+  /** Ses champs, ceux des ancres compris. */
+  readonly fields?: readonly SignatureRequestField[];
 }
 
 export interface SignatureRequest {
@@ -354,6 +394,19 @@ export interface SignatureRequest {
     readonly sha256: string;
   }[];
   readonly signers: readonly SignatureRequestSigner[];
+}
+
+/** Un champ d'un signataire tel que le service l'a posé — par coordonnées ou par ancre. */
+export interface SignatureRequestField extends Partial<Omit<SignatureFieldParams, "document">> {
+  readonly id: string;
+  readonly document_id: string;
+  readonly kind: FieldKind;
+  readonly page: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly required: boolean;
 }
 
 export interface SignatureRequestSummary {

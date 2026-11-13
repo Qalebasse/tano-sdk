@@ -8,6 +8,10 @@
 - Cachet électronique : `seals` — profils, scellement, lecture, téléchargement.
 - `documents.verify` : les signatures et cachets d'un PDF, et leur intégrité.
 - Bac à sable : `sandbox.sign` et `sandbox.decline` simulent la réponse d'un signataire.
+- Champs : les types `radio`, `signer_name`, `signer_email` et `read_only_text`, et les options de
+  chaque type (`label`, `max_length`, `default_value`, `date_format`, `layout`, `reason`, `group`,
+  `value`, `name_format`, `text`). Les ancres du PDF (`{{s1|signature}}`) posent les champs sans
+  coordonnées ; `signers[].fields` les rend.
 - Les PDF s'envoient en octets ; le SDK les encode en base 64. Un téléchargement rend un
   `PdfFile` : les octets, l'empreinte, la version signée ou non, le spécimen de bac à sable.
 - L'en-tête `User-Agent` annonce `tano-node/0.2.0` et `tano-python/0.2.0`.

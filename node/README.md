@@ -140,6 +140,23 @@ await writeFile("bail-signe.pdf", signe.data);
 
 Le guide : [Faire signer un document](https://docs.tano.africa/signature-electronique/faire-signer/).
 
+#### Placer les champs par ancre
+
+Plutôt que des coordonnées, écrivez l'ancre dans le PDF, de préférence en blanc : le service pose
+le champ à sa place. `s1` est le premier signataire de la liste.
+
+```text
+{{s1|signature}}
+{{s1|text|160|20|label=Ville|default_value=Abidjan}}
+{{s1|radio|14|14|group=duree|value=12 mois}}
+{{s1|mention|220|30|mention=Lu et approuvé le %date%}}
+```
+
+Une demande dont les signataires n'ont aucun `fields` mais dont le PDF porte des ancres est
+complète. La réponse rend `signers[].fields`, ceux des ancres compris. Une ancre fausse est
+refusée avec `invalid_anchor`. Voir
+[Placer les champs](https://docs.tano.africa/signature-electronique/champs/).
+
 ### Cachet électronique
 
 | Méthode | Route | Notes |
