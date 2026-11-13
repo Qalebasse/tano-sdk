@@ -19,6 +19,8 @@ import type {
   SignatureRequestCreateParams,
   SignatureRequestListParams,
   SignatureRequestSummary,
+  SignatureRequestUpdateParams,
+  SignerUpdateParams,
   SigningLink,
 } from "./types.js";
 
@@ -64,6 +66,55 @@ export class SignatureRequests {
       ...options,
       query: { status: params.status, reference: params.reference, limit: params.limit },
     });
+  }
+
+  /** Changer les métadonnées, ou reporter l'échéance d'une demande en cours. */
+  update(
+    requestId: string,
+    params: SignatureRequestUpdateParams,
+    options?: RequestOptions,
+  ): Promise<SignatureRequest> {
+    const body = {
+      ...(params.metadata === undefined ? {} : { metadata: params.metadata }),
+      ...(params.expires_at === undefined
+        ? {}
+        : {
+            expires_at:
+              params.expires_at instanceof Date
+                ? params.expires_at.toISOString()
+                : params.expires_at,
+          }),
+    };
+    return this.client.request("PATCH", `/v1/signature-requests/${id(requestId)}`, body, options);
+  }
+
+  /** Faire repartir une demande expirée, avec une nouvelle échéance (30 jours par défaut). */
+  reactivate(
+    requestId: string,
+    expiresInDays = 30,
+    options?: RequestOptions,
+  ): Promise<SignatureRequest> {
+    return this.client.request(
+      "POST",
+      `/v1/signature-requests/${id(requestId)}/reactivate`,
+      { expires_in_days: expiresInDays },
+      options,
+    );
+  }
+
+  /** Corriger le nom ou les coordonnées d'un signataire qui n'a pas répondu. */
+  updateSigner(
+    requestId: string,
+    signerId: string,
+    params: SignerUpdateParams,
+    options?: RequestOptions,
+  ): Promise<SignatureRequest> {
+    return this.client.request(
+      "PATCH",
+      `/v1/signature-requests/${id(requestId)}/signers/${id(signerId)}`,
+      params,
+      options,
+    );
   }
 
   /** Envoyer un brouillon : documents figés, premiers signataires invités. */

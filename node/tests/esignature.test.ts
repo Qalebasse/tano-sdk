@@ -144,6 +144,28 @@ describe("les demandes de signature", () => {
     });
   });
 
+  it("se modifient, se réactivent, et corrigent un signataire", async () => {
+    const { tano, calls } = client(
+      json(200, { id: "sr_1" }),
+      json(200, { id: "sr_1" }),
+      json(200, { id: "sr_1" }),
+    );
+    await tano.signatureRequests.update("sr_1", {
+      metadata: { dossier: "D-42", ancien: null },
+      expires_at: new Date("2027-01-10T00:00:00Z"),
+    });
+    expect(calls[0]?.init.method).toBe("PATCH");
+    expect(bodyOf(calls[0])).toEqual({
+      metadata: { dossier: "D-42", ancien: null },
+      expires_at: "2027-01-10T00:00:00.000Z",
+    });
+    await tano.signatureRequests.reactivate("sr_1", 14);
+    expect(bodyOf(calls[1])).toEqual({ expires_in_days: 14 });
+    await tano.signatureRequests.updateSigner("sr_1", "ss_1", { email: "aya@nouvelle.example" });
+    expect(calls[2]?.url).toBe("https://api.tano.africa/v1/signature-requests/sr_1/signers/ss_1");
+    expect(headersOf(calls[2])["X-Tano-Signature"]).toMatch(/^v2=/);
+  });
+
   it("se simulent en bac à sable", async () => {
     const { tano, calls } = client(json(200, { id: "sr_1", status: "completed" }));
     const reponse = await tano.sandbox.sign("sr_1", "ss_1");

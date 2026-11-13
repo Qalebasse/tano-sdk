@@ -15,8 +15,12 @@
 - Parcours du signataire : `delivery` (`email` ou `none`), `custom_text` (textes de l'invitation et
   de la relance), `redirect_urls` (retours après signature, refus, erreur), sur la demande et par
   signataire ; `signatureRequests.remind` (`signature_requests.remind`) relance à la main.
+- Gestion d'une demande en cours : `metadata` (jointes aux webhooks), `update` (métadonnées, report
+  de l'échéance), `reactivate` (une demande expirée repart), `updateSigner` (`update_signer` en
+  Python) pour corriger un signataire.
 - `@tano-africa/web` 0.2.0 : `mountSigning` affiche la page de signature dans votre page, avec ses
-  événements (`onStep`, `onSigned`, `onDeclined`, `onEnded`).
+  événements (`onStep`, `onSigned`, `onDeclined`, `onEnded`), dans un cadre de hauteur fixe
+  (`height`).
 - Les PDF s'envoient en octets ; le SDK les encode en base 64. Un téléchargement rend un
   `PdfFile` : les octets, l'empreinte, la version signée ou non, le spécimen de bac à sable.
 - L'en-tête `User-Agent` annonce `tano-node/0.2.0` et `tano-python/0.2.0`.

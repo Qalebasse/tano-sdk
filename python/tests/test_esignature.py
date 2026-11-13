@@ -153,3 +153,16 @@ def test_remind_and_journey_settings() -> None:
     assert body["delivery"] == "none"
     assert body["custom_text"] == {"invitation_subject": "Votre bail"}
     assert body["redirect_urls"] == {"success": "https://agence.example/merci"}
+
+
+def test_update_reactivate_and_update_signer() -> None:
+    fake = Fake(reply(200, {"id": "sr_1"}), reply(200, {"id": "sr_1"}), reply(200, {"id": "sr_1"}))
+    tano = Tano(KEY, transport=fake)
+    tano.signature_requests.update("sr_1", metadata={"dossier": "D-42", "ancien": None})
+    assert fake.calls[0].method == "PATCH"
+    assert sent(fake.calls[0]) == {"metadata": {"dossier": "D-42", "ancien": None}}
+    tano.signature_requests.reactivate("sr_1", expires_in_days=14)
+    assert sent(fake.calls[1]) == {"expires_in_days": 14}
+    tano.signature_requests.update_signer("sr_1", "ss_1", phone="+2250701021234")
+    assert fake.calls[2].url.endswith("/v1/signature-requests/sr_1/signers/ss_1")
+    assert sent(fake.calls[2]) == {"phone": "+2250701021234"}

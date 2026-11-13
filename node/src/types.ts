@@ -389,6 +389,24 @@ export interface SignatureRequestCreateParams {
   delivery?: Delivery;
   custom_text?: CustomText;
   redirect_urls?: RedirectUrls;
+  /** Vos paires clé → texte, jointes à chaque webhook de la demande. Pas de donnée personnelle. */
+  metadata?: Readonly<Record<string, string | number>>;
+}
+
+export interface SignatureRequestUpdateParams {
+  /** Fusionnées avec les métadonnées actuelles ; `null` retire une clé. */
+  metadata?: Readonly<Record<string, string | number | null>>;
+  /** Reporter l'échéance d'une demande en cours (90 jours au plus après l'envoi). */
+  expires_at?: string | Date;
+}
+
+/** Corriger un signataire qui n'a pas répondu ; invité, il reçoit un nouveau lien. */
+export interface SignerUpdateParams {
+  given_name?: string;
+  family_name?: string;
+  email?: string;
+  phone?: string;
+  auth_method?: "otp_email" | "otp_sms";
 }
 
 export interface SignatureRequestSigner {
@@ -420,6 +438,8 @@ export interface SignatureRequest {
   readonly created_at: string | null;
   readonly activated_at: string | null;
   readonly expires_at: string | null;
+  readonly metadata?: Readonly<Record<string, string>>;
+  readonly reactivated_at?: string | null;
   readonly documents: readonly {
     readonly id: string;
     readonly position: number;

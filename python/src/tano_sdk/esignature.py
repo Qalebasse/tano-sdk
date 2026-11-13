@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Union
 from urllib.parse import quote
 
@@ -77,6 +78,7 @@ class SignatureRequests:
         delivery: str | None = None,
         custom_text: Mapping[str, str] | None = None,
         redirect_urls: Mapping[str, str] | None = None,
+        metadata: Mapping[str, str | int] | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """Créer une demande, et l'envoyer d'un geste avec `activate=True`.
@@ -116,6 +118,8 @@ class SignatureRequests:
             body["custom_text"] = dict(custom_text)
         if redirect_urls:
             body["redirect_urls"] = dict(redirect_urls)
+        if metadata:
+            body["metadata"] = dict(metadata)
         return self._client.request(  # type: ignore[no-any-return]
             "POST", "/v1/signature-requests", body, idempotency_key=idempotency_key
         )
@@ -138,6 +142,65 @@ class SignatureRequests:
             "GET",
             "/v1/signature-requests",
             query={"status": status, "reference": reference, "limit": limit},
+        )
+
+    def update(
+        self,
+        request_id: str,
+        *,
+        metadata: Mapping[str, str | int | None] | None = None,
+        expires_at: str | datetime | None = None,
+    ) -> dict[str, Any]:
+        """Changer les métadonnées (fusionnées ; `None` retire une clé), ou reporter l'échéance
+        d'une demande en cours."""
+        body: dict[str, Any] = {}
+        if metadata is not None:
+            body["metadata"] = dict(metadata)
+        if expires_at is not None:
+            body["expires_at"] = (
+                expires_at.isoformat() if isinstance(expires_at, datetime) else expires_at
+            )
+        return self._client.request(  # type: ignore[no-any-return]
+            "PATCH", f"/v1/signature-requests/{_id(request_id)}", body
+        )
+
+    def reactivate(self, request_id: str, *, expires_in_days: int = 30) -> dict[str, Any]:
+        """Faire repartir une demande expirée, avec une nouvelle échéance. Ce qui est signé le
+        reste ; ceux qui attendaient reçoivent un lien neuf."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "POST",
+            f"/v1/signature-requests/{_id(request_id)}/reactivate",
+            {"expires_in_days": expires_in_days},
+        )
+
+    def update_signer(
+        self,
+        request_id: str,
+        signer_id: str,
+        *,
+        given_name: str | None = None,
+        family_name: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
+        auth_method: str | None = None,
+    ) -> dict[str, Any]:
+        """Corriger un signataire qui n'a pas répondu ; invité, il reçoit un nouveau lien à ses
+        nouvelles coordonnées."""
+        body = {
+            k: v
+            for k, v in (
+                ("given_name", given_name),
+                ("family_name", family_name),
+                ("email", email),
+                ("phone", phone),
+                ("auth_method", auth_method),
+            )
+            if v is not None
+        }
+        return self._client.request(  # type: ignore[no-any-return]
+            "PATCH",
+            f"/v1/signature-requests/{_id(request_id)}/signers/{_id(signer_id)}",
+            body,
         )
 
     def activate(self, request_id: str) -> dict[str, Any]:
