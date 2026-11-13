@@ -307,8 +307,7 @@ export type SigningEvent =
   | { readonly type: "tano:signing:step"; readonly step: "read" | "code" | "consent" }
   | { readonly type: "tano:signing:signed"; readonly requestStatus: string }
   | { readonly type: "tano:signing:declined" }
-  | { readonly type: "tano:signing:ended"; readonly reason: "invalid_link" | "closed" | "error" }
-  | { readonly type: "tano:resize"; readonly height: number };
+  | { readonly type: "tano:signing:ended"; readonly reason: "invalid_link" | "closed" | "error" };
 
 export interface MountSigningOptions {
   /** Le lien du signataire, tel que rendu par `POST /v1/signature-requests/{id}/signers/{sid}/link`. */
@@ -326,9 +325,12 @@ export interface MountSigningOptions {
   readonly onEnded?: (reason: "invalid_link" | "closed" | "error") => void;
   /** Tous les événements, tels quels. */
   readonly onEvent?: (event: SigningEvent) => void;
-  /** Suivre la hauteur de la page (vrai par défaut) ; sinon, `minHeight` fixe. */
-  readonly autoHeight?: boolean;
-  readonly minHeight?: number;
+  /**
+   * La hauteur du cadre, en CSS : `min(720px, 85vh)` par défaut. La page de signature est une
+   * application à la taille de son cadre — la visionneuse et le panneau défilent dedans — : elle
+   * n'annonce pas sa hauteur, donnez-lui en une.
+   */
+  readonly height?: string;
   /** Le titre du cadre, lu par les lecteurs d'écran. */
   readonly title?: string;
 }
@@ -365,7 +367,7 @@ export function mountSigning(
   iframe.referrerPolicy = "no-referrer";
   iframe.style.border = "0";
   iframe.style.width = "100%";
-  iframe.style.height = `${options.minHeight ?? 720}px`;
+  iframe.style.height = options.height ?? "min(720px, 85vh)";
   host.appendChild(iframe);
 
   const onMessage = (event: MessageEvent) => {
@@ -393,11 +395,6 @@ export function mountSigning(
         break;
       case "tano:signing:ended":
         options.onEnded?.(signing.reason);
-        break;
-      case "tano:resize":
-        if (options.autoHeight !== false) {
-          iframe.style.height = `${Math.max(signing.height, options.minHeight ?? 0)}px`;
-        }
         break;
     }
   };

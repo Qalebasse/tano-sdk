@@ -89,7 +89,8 @@ const page = mountSigning("#signature", {
 ```
 
 Comme pour le parcours, votre origine doit être parmi les domaines autorisés ; la page ne s'affiche
-qu'après la poignée de main. Intégrée, elle ne redirige jamais : c'est votre page qui décide de la
+qu'après la poignée de main. Le cadre a une hauteur fixe (`height`, `min(720px, 85vh)` par défaut) :
+la visionneuse et le panneau de signature défilent à l'intérieur, comme sur un téléphone. Intégrée, elle ne redirige jamais : c'est votre page qui décide de la
 suite. Aucun nom, aucun document, aucun jeton ne passe par les événements.
 
 ## Fenêtre ou redirection

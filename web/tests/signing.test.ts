@@ -40,11 +40,11 @@ describe("mountSigning", () => {
     post({ type: "tano:hello", version: 1 });
     expect(frameWindow.postMessage).toHaveBeenCalledWith({ type: "tano:init", version: 1 }, ORIGIN);
     post({ type: "tano:signing:step", step: "code" });
-    post({ type: "tano:resize", height: 1100 });
     post({ type: "tano:signing:signed", requestStatus: "completed" });
     expect(onStep).toHaveBeenCalledWith("code");
     expect(onSigned).toHaveBeenCalledWith("completed");
-    expect(iframe.style.height).toBe("1100px");
+    // Une hauteur fixe : la page défile dans son cadre, le cadre ne la suit pas.
+    expect(iframe.style.height).toBe("min(720px, 85vh)");
   });
 
   it("n'écoute ni une autre origine ni une autre fenêtre", () => {
