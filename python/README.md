@@ -80,6 +80,7 @@ Tano(
 | `signature_requests.cancel(request_id, reason)` | `POST …/{id}/cancel` | Annuler une demande en cours |
 | `signature_requests.delete(request_id)` | `DELETE …/{id}` | Supprimer un brouillon |
 | `signature_requests.link(request_id, signer_id)` | `POST …/signers/{id}/link` | Le lien d'un signataire invité ; il remplace le précédent |
+| `signature_requests.remind(request_id, signer_id)` | `POST …/signers/{id}/remind` | Relancer, avec un nouveau lien. Une fois par heure au plus |
 | `signature_requests.download(request_id, document_id)` | `GET …/documents/{id}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
 | `signature_requests.audit_trail(request_id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve |
 | `sandbox.sign(request_id, signer_id)`, `sandbox.decline(…)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement |

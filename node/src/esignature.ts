@@ -107,6 +107,17 @@ export class SignatureRequests {
     );
   }
 
+  /** Relancer un signataire invité qui n'a pas répondu : Tano lui renvoie l'invitation, avec un
+   * nouveau lien. Une fois par heure au plus ; refusé pour `delivery: "none"`. */
+  remind(requestId: string, signerId: string, options?: RequestOptions): Promise<SignatureRequest> {
+    return this.client.request(
+      "POST",
+      `/v1/signature-requests/${id(requestId)}/signers/${id(signerId)}/remind`,
+      {},
+      options,
+    );
+  }
+
   /** Le document signé une fois la demande complétée, le document présenté avant. */
   download(requestId: string, documentId: string, options?: RequestOptions): Promise<PdfFile> {
     return this.client.requestPdf(

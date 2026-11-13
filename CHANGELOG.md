@@ -12,6 +12,11 @@
   chaque type (`label`, `max_length`, `default_value`, `date_format`, `layout`, `reason`, `group`,
   `value`, `name_format`, `text`). Les ancres du PDF (`{{s1|signature}}`) posent les champs sans
   coordonnées ; `signers[].fields` les rend.
+- Parcours du signataire : `delivery` (`email` ou `none`), `custom_text` (textes de l'invitation et
+  de la relance), `redirect_urls` (retours après signature, refus, erreur), sur la demande et par
+  signataire ; `signatureRequests.remind` (`signature_requests.remind`) relance à la main.
+- `@tano-africa/web` 0.2.0 : `mountSigning` affiche la page de signature dans votre page, avec ses
+  événements (`onStep`, `onSigned`, `onDeclined`, `onEnded`).
 - Les PDF s'envoient en octets ; le SDK les encode en base 64. Un téléchargement rend un
   `PdfFile` : les octets, l'empreinte, la version signée ou non, le spécimen de bac à sable.
 - L'en-tête `User-Agent` annonce `tano-node/0.2.0` et `tano-python/0.2.0`.

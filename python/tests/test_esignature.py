@@ -134,3 +134,22 @@ def test_seal_and_verify() -> None:
         "document": base64.b64encode(b"%PDF").decode(),
     }
     assert tano.documents.verify(b"%PDF")["sound"] is True
+
+
+def test_remind_and_journey_settings() -> None:
+    fake = Fake(reply(200, {"id": "sr_1"}), reply(201, {"id": "sr_2"}))
+    tano = Tano(KEY, transport=fake)
+    tano.signature_requests.remind("sr_1", "ss_1")
+    assert fake.calls[0].url.endswith("/v1/signature-requests/sr_1/signers/ss_1/remind")
+    tano.signature_requests.create(
+        name="Bail",
+        documents=[{"filename": "b.pdf", "content": "JVBERi0="}],
+        signers=[],
+        delivery="none",
+        custom_text={"invitation_subject": "Votre bail"},
+        redirect_urls={"success": "https://agence.example/merci"},
+    )
+    body = sent(fake.calls[1])
+    assert body["delivery"] == "none"
+    assert body["custom_text"] == {"invitation_subject": "Votre bail"}
+    assert body["redirect_urls"] == {"success": "https://agence.example/merci"}

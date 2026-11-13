@@ -125,6 +125,25 @@ describe("les demandes de signature", () => {
     expect(fichier).toMatchObject({ sha256: "ab12", signed: true, sandbox: true });
   });
 
+  it("relancent un signataire, et portent les réglages du parcours", async () => {
+    const { tano, calls } = client(json(200, { id: "sr_1" }), json(201, { id: "sr_2" }));
+    await tano.signatureRequests.remind("sr_1", "ss_1");
+    expect(calls[0]?.url).toBe(
+      "https://api.tano.africa/v1/signature-requests/sr_1/signers/ss_1/remind",
+    );
+    await tano.signatureRequests.create({
+      name: "Bail",
+      documents: [{ filename: "b.pdf", content: "JVBERi0=" }],
+      signers: [],
+      delivery: "none",
+      redirect_urls: { success: "https://agence.example/merci" },
+    });
+    expect(bodyOf(calls[1])).toMatchObject({
+      delivery: "none",
+      redirect_urls: { success: "https://agence.example/merci" },
+    });
+  });
+
   it("se simulent en bac à sable", async () => {
     const { tano, calls } = client(json(200, { id: "sr_1", status: "completed" }));
     const reponse = await tano.sandbox.sign("sr_1", "ss_1");

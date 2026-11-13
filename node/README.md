@@ -109,6 +109,7 @@ new Tano({
 | `signatureRequests.cancel(id, reason)` | `POST …/{id}/cancel` | Annuler une demande en cours |
 | `signatureRequests.delete(id)` | `DELETE …/{id}` | Supprimer un brouillon |
 | `signatureRequests.link(id, signerId)` | `POST …/{id}/signers/{signerId}/link` | `{ url }` : le lien d'un signataire invité ; il remplace le précédent |
+| `signatureRequests.remind(id, signerId)` | `POST …/{id}/signers/{signerId}/remind` | Relancer : Tano renvoie l'invitation, avec un nouveau lien. Une fois par heure au plus |
 | `signatureRequests.download(id, documentId)` | `GET …/{id}/documents/{documentId}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
 | `signatureRequests.auditTrail(id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve, une fois la demande complétée |
 | `sandbox.sign(id, signerId)` / `sandbox.decline(id, signerId)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement : simuler la réponse d'un signataire invité |

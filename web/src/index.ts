@@ -298,3 +298,115 @@ export function mount(target: HTMLElement | string, options: MountOptions): Moun
     },
   };
 }
+
+// ── La signature électronique dans votre page (iframe) ──────────────────────
+
+/** Ce que la page de signature intégrée dit à votre page. Ni nom, ni document, ni jeton. */
+export type SigningEvent =
+  | { readonly type: "tano:ready"; readonly version: number; readonly kind?: "signing" }
+  | { readonly type: "tano:signing:step"; readonly step: "read" | "code" | "consent" }
+  | { readonly type: "tano:signing:signed"; readonly requestStatus: string }
+  | { readonly type: "tano:signing:declined" }
+  | { readonly type: "tano:signing:ended"; readonly reason: "invalid_link" | "closed" | "error" }
+  | { readonly type: "tano:resize"; readonly height: number };
+
+export interface MountSigningOptions {
+  /** Le lien du signataire, tel que rendu par `POST /v1/signature-requests/{id}/signers/{sid}/link`. */
+  readonly url: string;
+  /** La page de signature est affichée, votre page reconnue. */
+  readonly onReady?: () => void;
+  /** Où en est le signataire : lire et remplir, recevoir le code, consentir. */
+  readonly onStep?: (step: "read" | "code" | "consent") => void;
+  /** Il a signé. `requestStatus` vaut `completed` s'il était le dernier : téléchargez alors le
+   * document signé côté serveur (ou attendez `signature_request.completed`). */
+  readonly onSigned?: (requestStatus: string) => void;
+  /** Il a refusé : la demande s'arrête. */
+  readonly onDeclined?: () => void;
+  /** La demande n'est plus signable (expirée, annulée, déjà close). */
+  readonly onEnded?: (reason: "invalid_link" | "closed" | "error") => void;
+  /** Tous les événements, tels quels. */
+  readonly onEvent?: (event: SigningEvent) => void;
+  /** Suivre la hauteur de la page (vrai par défaut) ; sinon, `minHeight` fixe. */
+  readonly autoHeight?: boolean;
+  readonly minHeight?: number;
+  /** Le titre du cadre, lu par les lecteurs d'écran. */
+  readonly title?: string;
+}
+
+/** L'adresse d'intégration d'un lien de signature : même origine, chemin `/signer/embed`, même
+ * fragment (le jeton n'est jamais envoyé au serveur). */
+export function signingEmbedUrl(url: string): URL {
+  const parsed = checkJourneyUrl(url);
+  if (!parsed.hash.startsWith("#tsig_")) {
+    throw new TanoWebError("invalid_url", "Ce lien n'est pas un lien de signature (#tsig_…).");
+  }
+  parsed.pathname = "/signer/embed";
+  parsed.search = "";
+  return parsed;
+}
+
+/**
+ * Afficher la page de signature dans votre page. Votre origine doit figurer parmi les domaines
+ * autorisés (console, page Développeurs) : la page ne s'affiche qu'après la même poignée de main
+ * que le parcours. Intégrée, elle ne redirige jamais : c'est vous qui décidez de la suite.
+ */
+export function mountSigning(
+  target: HTMLElement | string,
+  options: MountSigningOptions,
+): MountedJourney {
+  const host = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
+  if (host === null)
+    throw new TanoWebError("invalid_url", `Élément introuvable : ${String(target)}.`);
+
+  const url = signingEmbedUrl(options.url);
+  const iframe = document.createElement("iframe");
+  iframe.src = url.toString();
+  iframe.title = options.title ?? "Signature électronique";
+  iframe.referrerPolicy = "no-referrer";
+  iframe.style.border = "0";
+  iframe.style.width = "100%";
+  iframe.style.height = `${options.minHeight ?? 720}px`;
+  host.appendChild(iframe);
+
+  const onMessage = (event: MessageEvent) => {
+    if (event.source !== iframe.contentWindow || event.origin !== url.origin) return;
+    const data = event.data as { type?: unknown } | null;
+    if (data === null || typeof data.type !== "string") return;
+    if (data.type === "tano:hello") {
+      iframe.contentWindow?.postMessage({ type: "tano:init", version: 1 }, url.origin);
+      return;
+    }
+    const signing = data as SigningEvent;
+    options.onEvent?.(signing);
+    switch (signing.type) {
+      case "tano:ready":
+        options.onReady?.();
+        break;
+      case "tano:signing:step":
+        options.onStep?.(signing.step);
+        break;
+      case "tano:signing:signed":
+        options.onSigned?.(signing.requestStatus);
+        break;
+      case "tano:signing:declined":
+        options.onDeclined?.();
+        break;
+      case "tano:signing:ended":
+        options.onEnded?.(signing.reason);
+        break;
+      case "tano:resize":
+        if (options.autoHeight !== false) {
+          iframe.style.height = `${Math.max(signing.height, options.minHeight ?? 0)}px`;
+        }
+        break;
+    }
+  };
+  window.addEventListener("message", onMessage);
+  return {
+    iframe,
+    destroy: () => {
+      window.removeEventListener("message", onMessage);
+      iframe.remove();
+    },
+  };
+}

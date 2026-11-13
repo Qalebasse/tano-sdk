@@ -337,6 +337,33 @@ export interface SignerParams {
   /** Pour les heures calmes des relances. `Africa/Abidjan` par défaut. */
   time_zone?: string;
   fields?: readonly SignatureFieldParams[];
+  /** Celui de la demande par défaut. */
+  delivery?: Delivery;
+  /** Ses textes, qui l'emportent, clé par clé, sur ceux de la demande. */
+  custom_text?: CustomText;
+  /** Ses adresses de retour, qui l'emportent, clé par clé, sur celles de la demande. */
+  redirect_urls?: RedirectUrls;
+}
+
+/** `email` : Tano invite et relance. `none` : Tano n'écrit pas, vous remettez le lien vous-même
+ * (`signatureRequests.link`). */
+export type Delivery = "email" | "none";
+
+/** L'objet et le corps de l'invitation et de la relance, à la place de ceux de Tano.
+ * `{organisation}`, `{request}` et `{given_name}` y sont remplacés ; le lien suit toujours. */
+export interface CustomText {
+  invitation_subject?: string;
+  invitation_body?: string;
+  reminder_subject?: string;
+  reminder_body?: string;
+}
+
+/** Où la page de signature renvoie le signataire, en HTTPS. Tano y ajoute
+ * `signature_request_id`, `signer_id` et `reference`. */
+export interface RedirectUrls {
+  success?: string;
+  decline?: string;
+  error?: string;
 }
 
 /** Un PDF à faire signer ou à sceller : ses octets, ou déjà en base 64. */
@@ -358,6 +385,10 @@ export interface SignatureRequestCreateParams {
   reminder_days?: readonly number[];
   /** `true` pour envoyer la demande dans le même appel. */
   activate?: boolean;
+  /** `email` par défaut. */
+  delivery?: Delivery;
+  custom_text?: CustomText;
+  redirect_urls?: RedirectUrls;
 }
 
 export interface SignatureRequestSigner {
@@ -374,6 +405,8 @@ export interface SignatureRequestSigner {
   readonly signed_at: string | null;
   /** Ses champs, ceux des ancres compris. */
   readonly fields?: readonly SignatureRequestField[];
+  readonly delivery?: Delivery;
+  readonly reminded_at?: string | null;
 }
 
 export interface SignatureRequest {

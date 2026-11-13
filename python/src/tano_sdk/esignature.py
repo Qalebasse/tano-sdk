@@ -74,12 +74,21 @@ class SignatureRequests:
         expires_in_days: int | None = None,
         reminder_days: Iterable[int] | None = None,
         activate: bool = False,
+        delivery: str | None = None,
+        custom_text: Mapping[str, str] | None = None,
+        redirect_urls: Mapping[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """Créer une demande, et l'envoyer d'un geste avec `activate=True`.
 
         `documents` : `{"filename": …, "content": <octets ou base 64>}`. `signers` : comme dans
-        l'API, chacun avec ses `fields` en points PDF depuis le coin bas gauche de la page.
+        l'API, chacun avec ses `fields` en points PDF depuis le coin bas gauche de la page — ou
+        des ancres `{{s1|signature}}` dans le PDF.
+
+        `delivery` : `email` (Tano invite et relance) ou `none` (vous remettez le lien vous-même).
+        `custom_text` : `invitation_subject`, `invitation_body`, `reminder_subject`,
+        `reminder_body`. `redirect_urls` : `success`, `decline`, `error`, en HTTPS. Chaque
+        signataire peut les préciser à son tour.
         """
         body: dict[str, Any] = {
             "name": name,
@@ -101,6 +110,12 @@ class SignatureRequests:
                 body[key] = value
         if reminder_days is not None:
             body["reminder_days"] = list(reminder_days)
+        if delivery is not None:
+            body["delivery"] = delivery
+        if custom_text:
+            body["custom_text"] = dict(custom_text)
+        if redirect_urls:
+            body["redirect_urls"] = dict(redirect_urls)
         return self._client.request(  # type: ignore[no-any-return]
             "POST", "/v1/signature-requests", body, idempotency_key=idempotency_key
         )
@@ -149,6 +164,15 @@ class SignatureRequests:
             "POST", f"/v1/signature-requests/{_id(request_id)}/signers/{_id(signer_id)}/link", {}
         )
         return str(reply["url"])
+
+    def remind(self, request_id: str, signer_id: str) -> dict[str, Any]:
+        """Relancer un signataire invité qui n'a pas répondu : Tano lui renvoie l'invitation, avec
+        un nouveau lien. Une fois par heure au plus ; refusé pour `delivery: none`."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "POST",
+            f"/v1/signature-requests/{_id(request_id)}/signers/{_id(signer_id)}/remind",
+            {},
+        )
 
     def download(self, request_id: str, document_id: str) -> PdfFile:
         """Le document signé une fois la demande complétée, le document présenté avant."""
