@@ -1,7 +1,7 @@
 {
   "name": "@tano-africa/node",
-  "version": "0.1.1",
-  "description": "Bibliothèque Node.js officielle de l'API de vérification d'identité Tano : dossiers, sessions de parcours, résultats, webhooks.",
+  "version": "0.2.0",
+  "description": "Bibliothèque Node.js officielle de l'API Tano : vérification d'identité, signature et cachet électroniques, webhooks.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -24,7 +24,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "homepage": "https://docs.tano.africa",
-  "keywords": ["tano", "kyc", "identity", "verification", "africa"],
+  "keywords": ["tano", "kyc", "identity", "verification", "e-signature", "electronic-seal", "africa"],
   "publishConfig": {
     "access": "public"
   }

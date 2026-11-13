@@ -245,3 +245,200 @@ export interface WebhookEvent<T = Record<string, unknown>> {
   /** `X-Tano-Delivery` : gardez-le pour écarter les doublons. */
   readonly delivery_id: string;
 }
+
+// ── Signature électronique ──────────────────────────────────────────────────
+
+export type SignatureRequestStatus =
+  | "draft"
+  | "ongoing"
+  | "completed"
+  | "declined"
+  | "expired"
+  | "cancelled";
+
+export type SignerStatus =
+  | "pending"
+  | "notified"
+  | "opened"
+  | "authenticated"
+  | "signed"
+  | "declined";
+
+export type FieldKind = "signature" | "initials" | "date" | "text" | "checkbox" | "mention";
+
+/** Un champ placé sur une page, en points PDF depuis le coin **bas gauche** de la page. */
+export interface SignatureFieldParams {
+  /** L'indice du document dans la demande, à partir de 0. */
+  document: number;
+  kind: FieldKind;
+  /** La page, à partir de 1. */
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** `true` par défaut. */
+  required?: boolean;
+  /** Pour `kind: "mention"` : la phrase à recopier, par exemple « Lu et approuvé ». */
+  mention?: string;
+}
+
+export interface SignerParams {
+  given_name: string;
+  family_name: string;
+  /** Pour `otp_email`. */
+  email?: string;
+  /** Pour `otp_sms`, au format international (`+2250701021234`). */
+  phone?: string;
+  auth_method: "otp_email" | "otp_sms";
+  /** `signer` par défaut ; `approver` approuve sans champ de signature, `viewer` reçoit une copie. */
+  role?: "signer" | "approver" | "viewer";
+  /** Son rang en ordre séquentiel, à partir de 1. */
+  position?: number;
+  locale?: "fr" | "en";
+  /** Pour les heures calmes des relances. `Africa/Abidjan` par défaut. */
+  time_zone?: string;
+  fields?: readonly SignatureFieldParams[];
+}
+
+/** Un PDF à faire signer ou à sceller : ses octets, ou déjà en base 64. */
+export type PdfContent = Uint8Array | string;
+
+export interface SignatureRequestCreateParams {
+  name: string;
+  /** Les PDF : le SDK encode les octets en base 64. */
+  documents: readonly { filename: string; content: PdfContent }[];
+  signers: readonly SignerParams[];
+  reference?: string;
+  ordering?: "sequential" | "parallel";
+  level?: "simple";
+  message?: string;
+  locale?: "fr" | "en";
+  /** De 1 à 90. 30 par défaut. */
+  expires_in_days?: number;
+  /** Les jours de relance après l'invitation, deux au plus. `[2, 5]` par défaut, `[]` pour aucune. */
+  reminder_days?: readonly number[];
+  /** `true` pour envoyer la demande dans le même appel. */
+  activate?: boolean;
+}
+
+export interface SignatureRequestSigner {
+  readonly id: string;
+  readonly position: number;
+  readonly role: "signer" | "approver" | "viewer";
+  readonly status: SignerStatus;
+  readonly auth_method: "otp_email" | "otp_sms";
+  /** L'adresse ou le numéro, masqués. */
+  readonly contact: string | null;
+  /** Rendu seulement à une clé qui porte la permission `personal_data`. */
+  readonly name: string | null;
+  readonly notified_at: string | null;
+  readonly signed_at: string | null;
+}
+
+export interface SignatureRequest {
+  readonly id: string;
+  readonly name: string;
+  readonly status: SignatureRequestStatus;
+  readonly level: "simple";
+  readonly ordering: "sequential" | "parallel";
+  readonly reference: string | null;
+  readonly environment: Environment;
+  readonly created_at: string | null;
+  readonly activated_at: string | null;
+  readonly expires_at: string | null;
+  readonly documents: readonly {
+    readonly id: string;
+    readonly position: number;
+    readonly pages: number;
+    readonly sha256: string;
+  }[];
+  readonly signers: readonly SignatureRequestSigner[];
+}
+
+export interface SignatureRequestSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly status: SignatureRequestStatus;
+  readonly reference: string | null;
+  readonly created_at: string | null;
+  readonly environment: Environment;
+}
+
+export interface SignatureRequestListParams {
+  status?: SignatureRequestStatus;
+  /** Votre référence, exacte. */
+  reference?: string;
+  /** De 1 à 100. 50 par défaut. */
+  limit?: number;
+}
+
+export interface SigningLink {
+  /** Le lien de signature. Il remplace le précédent ; ne le stockez pas. */
+  readonly url: string;
+}
+
+export interface SandboxAnswer {
+  readonly id: string;
+  readonly status: SignatureRequestStatus;
+}
+
+/** Un PDF téléchargé : ses octets et ce que disent ses en-têtes. */
+export interface PdfFile {
+  readonly data: Buffer;
+  /** `X-Tano-Document-Sha256` : l'empreinte du fichier. */
+  readonly sha256: string | null;
+  /** `X-Tano-Document-Signed` : le document est-il la version signée. `null` hors document signé. */
+  readonly signed: boolean | null;
+  /** `X-Tano-Sandbox` : un spécimen de bac à sable, sans valeur. */
+  readonly sandbox: boolean;
+}
+
+// ── Cachet électronique ─────────────────────────────────────────────────────
+
+export interface SealProfile {
+  readonly id: string;
+  readonly label: string;
+  readonly level: string;
+  /** `organisation` : le vôtre ; `tano` : Tano scelle pour le compte de votre organisation. */
+  readonly owner: "organisation" | "tano";
+  readonly not_after: string | null;
+  readonly revoked: boolean;
+}
+
+export interface SealCreateParams {
+  profile_id: string;
+  /** Le PDF : le SDK encode les octets en base 64. */
+  document: PdfContent;
+  reference?: string;
+}
+
+export interface Seal {
+  readonly id: string;
+  readonly status: "sealed" | "failed";
+  readonly profile_id: string;
+  readonly on_behalf: boolean;
+  readonly reference: string | null;
+  readonly sealed_sha256: string | null;
+  readonly failure: string | null;
+  readonly created_at: string | null;
+  readonly sealed_at: string | null;
+  readonly environment: Environment;
+}
+
+/** `POST /v1/verify` : les signatures et cachets d'un PDF, et leur intégrité. */
+export interface DocumentVerification {
+  readonly signed: boolean;
+  /** Toutes les signatures sont intègres, justes, reconnues et inchangées depuis. */
+  readonly sound: boolean;
+  readonly signatures: readonly {
+    readonly field: string | null;
+    readonly signer: string | null;
+    readonly intact: boolean;
+    readonly valid: boolean;
+    readonly trusted: boolean;
+    readonly untouched_since_signing: boolean;
+    readonly timestamped_at: string | null;
+    readonly sound: boolean;
+  }[];
+}

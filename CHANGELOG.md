@@ -1,5 +1,19 @@
 # Journal des versions des paquets npm
 
+## 0.2.0 — `@tano-africa/node` (et `tano-sdk` 0.2.0 sur PyPI)
+
+- Signature électronique : `signatureRequests` (`signature_requests` en Python) — créer et
+  envoyer une demande, la lire, la lister, l'activer, l'annuler, supprimer un brouillon, obtenir
+  le lien d'un signataire, télécharger le document signé et le fichier de preuve.
+- Cachet électronique : `seals` — profils, scellement, lecture, téléchargement.
+- `documents.verify` : les signatures et cachets d'un PDF, et leur intégrité.
+- Bac à sable : `sandbox.sign` et `sandbox.decline` simulent la réponse d'un signataire.
+- Les PDF s'envoient en octets ; le SDK les encode en base 64. Un téléchargement rend un
+  `PdfFile` : les octets, l'empreinte, la version signée ou non, le spécimen de bac à sable.
+- L'en-tête `User-Agent` annonce `tano-node/0.2.0` et `tano-python/0.2.0`.
+
+Aucun changement sur la vérification d'identité.
+
 ## 0.1.1
 
 - README réécrits pour la production, en français : installation, démarrage rapide, référence

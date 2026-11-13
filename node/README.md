@@ -3,8 +3,8 @@
 [![npm](https://img.shields.io/npm/v/@tano-africa/node.svg)](https://www.npmjs.com/package/@tano-africa/node)
 [![licence](https://img.shields.io/npm/l/@tano-africa/node.svg)](LICENSE)
 
-La bibliothèque Node.js officielle de l'API de vérification d'identité
-[Tano](https://docs.tano.africa).
+La bibliothèque Node.js officielle de l'API [Tano](https://docs.tano.africa) : vérification
+d'identité, signature électronique et cachet électronique.
 
 - Signature des requêtes (HMAC-SHA256, v2) et protection contre le rejeu, prises en charge
 - Clé d'idempotence sur chaque écriture, conservée d'un réessai à l'autre
@@ -97,6 +97,58 @@ new Tano({
 | Méthode | Route | Notes |
 | --- | --- | --- |
 | `sandbox.submit(caseId)` | `POST /v1/sandbox/cases/{id}/submit` | Clés de bac à sable seulement. Le nom de famille déclaré choisit l'issue : `TESTPASS`, `TESTREVIEW`, `TESTFAIL`, `TESTSANCTION`, `TESTSLOW`, `TESTDOWN` |
+
+### Signature électronique
+
+| Méthode | Route | Notes |
+| --- | --- | --- |
+| `signatureRequests.create(params, options?)` | `POST /v1/signature-requests` | Signée. Les PDF en `Buffer` sont encodés en base 64 ; `activate: true` envoie dans le même appel |
+| `signatureRequests.retrieve(id)` | `GET /v1/signature-requests/{id}` | État, documents, signataires |
+| `signatureRequests.list(params?)` | `GET /v1/signature-requests` | `status`, `reference`, `limit` |
+| `signatureRequests.activate(id)` | `POST …/{id}/activate` | Envoyer un brouillon |
+| `signatureRequests.cancel(id, reason)` | `POST …/{id}/cancel` | Annuler une demande en cours |
+| `signatureRequests.delete(id)` | `DELETE …/{id}` | Supprimer un brouillon |
+| `signatureRequests.link(id, signerId)` | `POST …/{id}/signers/{signerId}/link` | `{ url }` : le lien d'un signataire invité ; il remplace le précédent |
+| `signatureRequests.download(id, documentId)` | `GET …/{id}/documents/{documentId}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
+| `signatureRequests.auditTrail(id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve, une fois la demande complétée |
+| `sandbox.sign(id, signerId)` / `sandbox.decline(id, signerId)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement : simuler la réponse d'un signataire invité |
+
+```ts
+import { readFile, writeFile } from "node:fs/promises";
+
+const demande = await tano.signatureRequests.create({
+  name: "Bail — appartement Cocody",
+  reference: "BAIL-2026-118",
+  documents: [{ filename: "bail.pdf", content: await readFile("bail.pdf") }],
+  signers: [
+    {
+      given_name: "Aya",
+      family_name: "Koné",
+      email: "aya.kone@exemple.ci",
+      auth_method: "otp_email",
+      // En points PDF, depuis le coin bas gauche de la page.
+      fields: [{ document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 }],
+    },
+  ],
+  activate: true,
+});
+
+// Plus tard, à la réception de `signature_request.completed` :
+const signe = await tano.signatureRequests.download(demande.id, demande.documents[0].id);
+await writeFile("bail-signe.pdf", signe.data);
+```
+
+Le guide : [Faire signer un document](https://docs.tano.africa/signature-electronique/faire-signer/).
+
+### Cachet électronique
+
+| Méthode | Route | Notes |
+| --- | --- | --- |
+| `seals.profiles()` | `GET /v1/seal-profiles` | Les profils utilisables : les vôtres, puis celui de Tano |
+| `seals.create({ profile_id, document, reference? })` | `POST /v1/seals` | Signée, synchrone. `document` en `Buffer` ou en base 64 |
+| `seals.retrieve(id)` | `GET /v1/seals/{id}` | |
+| `seals.download(id)` | `GET /v1/seals/{id}/download` | `PdfFile` |
+| `documents.verify(document)` | `POST /v1/verify` | Les signatures et cachets d'un PDF, et leur intégrité. Toute clé |
 
 ### Requêtes brutes
 

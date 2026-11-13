@@ -1,0 +1,180 @@
+/**
+ * La signature et le cachet électroniques : demandes de signature, cachets, vérification d'un PDF.
+ *
+ * Les PDF s'envoient en octets (`Buffer`, `Uint8Array`) : le SDK les encode en base 64. Une
+ * chaîne est prise pour du base 64 déjà prêt.
+ */
+
+import type { Tano } from "./client.js";
+import type {
+  DocumentVerification,
+  PdfContent,
+  PdfFile,
+  RequestOptions,
+  SandboxAnswer,
+  Seal,
+  SealCreateParams,
+  SealProfile,
+  SignatureRequest,
+  SignatureRequestCreateParams,
+  SignatureRequestListParams,
+  SignatureRequestSummary,
+  SigningLink,
+} from "./types.js";
+
+const id = encodeURIComponent;
+
+export function toBase64(content: PdfContent): string {
+  return typeof content === "string" ? content : Buffer.from(content).toString("base64");
+}
+
+export class SignatureRequests {
+  constructor(private readonly client: Tano) {}
+
+  /** Créer une demande, et l'envoyer d'un geste avec `activate: true`. */
+  create(
+    params: SignatureRequestCreateParams,
+    options?: RequestOptions,
+  ): Promise<SignatureRequest> {
+    const body = {
+      ...params,
+      documents: params.documents.map((d) => ({
+        filename: d.filename,
+        content: toBase64(d.content),
+      })),
+    };
+    return this.client.request("POST", "/v1/signature-requests", body, options);
+  }
+
+  retrieve(requestId: string, options?: RequestOptions): Promise<SignatureRequest> {
+    return this.client.request(
+      "GET",
+      `/v1/signature-requests/${id(requestId)}`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Les demandes de l'environnement de la clé, de la plus récente à la plus ancienne. */
+  list(
+    params: SignatureRequestListParams = {},
+    options?: RequestOptions,
+  ): Promise<{ readonly data: readonly SignatureRequestSummary[] }> {
+    return this.client.request("GET", "/v1/signature-requests", undefined, {
+      ...options,
+      query: { status: params.status, reference: params.reference, limit: params.limit },
+    });
+  }
+
+  /** Envoyer un brouillon : documents figés, premiers signataires invités. */
+  activate(requestId: string, options?: RequestOptions): Promise<SignatureRequest> {
+    return this.client.request(
+      "POST",
+      `/v1/signature-requests/${id(requestId)}/activate`,
+      {},
+      options,
+    );
+  }
+
+  /** Annuler une demande en cours. Les liens cessent de valoir ; `signature_request.cancelled`. */
+  cancel(requestId: string, reason: string, options?: RequestOptions): Promise<SignatureRequest> {
+    return this.client.request(
+      "POST",
+      `/v1/signature-requests/${id(requestId)}/cancel`,
+      { reason },
+      options,
+    );
+  }
+
+  /** Supprimer un brouillon. Une demande envoyée s'annule, elle ne se supprime pas. */
+  async delete(requestId: string, options?: RequestOptions): Promise<void> {
+    await this.client.request(
+      "DELETE",
+      `/v1/signature-requests/${id(requestId)}`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Le lien de signature d'un signataire invité, pour l'ouvrir dans votre application. Il
+   * remplace le précédent. */
+  link(requestId: string, signerId: string, options?: RequestOptions): Promise<SigningLink> {
+    return this.client.request(
+      "POST",
+      `/v1/signature-requests/${id(requestId)}/signers/${id(signerId)}/link`,
+      {},
+      options,
+    );
+  }
+
+  /** Le document signé une fois la demande complétée, le document présenté avant. */
+  download(requestId: string, documentId: string, options?: RequestOptions): Promise<PdfFile> {
+    return this.client.requestPdf(
+      `/v1/signature-requests/${id(requestId)}/documents/${id(documentId)}/download`,
+      options,
+    );
+  }
+
+  /** Le fichier de preuve, une fois la demande complétée. */
+  auditTrail(requestId: string, options?: RequestOptions): Promise<PdfFile> {
+    return this.client.requestPdf(`/v1/signature-requests/${id(requestId)}/audit-trail`, options);
+  }
+}
+
+export class Seals {
+  constructor(private readonly client: Tano) {}
+
+  /** Les profils utilisables : ceux de votre organisation, puis celui de Tano. */
+  async profiles(options?: RequestOptions): Promise<readonly SealProfile[]> {
+    const page = await this.client.request<{ data: SealProfile[] }>(
+      "GET",
+      "/v1/seal-profiles",
+      undefined,
+      options,
+    );
+    return page.data;
+  }
+
+  /** Sceller un PDF. Synchrone : la réponse dit si le document est scellé. */
+  create(params: SealCreateParams, options?: RequestOptions): Promise<Seal> {
+    return this.client.request(
+      "POST",
+      "/v1/seals",
+      { ...params, document: toBase64(params.document) },
+      options,
+    );
+  }
+
+  retrieve(sealId: string, options?: RequestOptions): Promise<Seal> {
+    return this.client.request("GET", `/v1/seals/${id(sealId)}`, undefined, options);
+  }
+
+  download(sealId: string, options?: RequestOptions): Promise<PdfFile> {
+    return this.client.requestPdf(`/v1/seals/${id(sealId)}/download`, options);
+  }
+}
+
+export class Documents {
+  constructor(private readonly client: Tano) {}
+
+  /** Les signatures et cachets d'un PDF, et leur intégrité. Toute clé ; rien n'est facturé ni
+   * conservé. */
+  verify(document: PdfContent, options?: RequestOptions): Promise<DocumentVerification> {
+    return this.client.request("POST", "/v1/verify", { document: toBase64(document) }, options);
+  }
+}
+
+export function simulateAnswer(
+  client: Tano,
+  requestId: string,
+  signerId: string,
+  answer: "sign" | "decline",
+  options?: RequestOptions,
+): Promise<SandboxAnswer> {
+  return client.request(
+    "POST",
+    `/v1/sandbox/signature-requests/${id(requestId)}/signers/${id(signerId)}/${answer}`,
+    {},
+    options,
+  );
+}

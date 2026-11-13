@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { type ApiErrorBody, TanoApiError, TanoConnectionError, TanoError } from "./errors.js";
+import { Documents, Seals, SignatureRequests, simulateAnswer } from "./esignature.js";
 import { parseKey, requestSignature } from "./signature.js";
 import type {
   Case,
@@ -14,12 +15,14 @@ import type {
   CaseResults,
   JourneySession,
   Page,
+  PdfFile,
   RequestOptions,
+  SandboxAnswer,
   SandboxSubmission,
   SessionCreateParams,
 } from "./types.js";
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.2.0";
 const DEFAULT_BASE_URL = "https://api.tano.africa";
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 
@@ -47,6 +50,9 @@ export class Tano {
   readonly cases: Cases;
   readonly sessions: Sessions;
   readonly sandbox: Sandbox;
+  readonly signatureRequests: SignatureRequests;
+  readonly seals: Seals;
+  readonly documents: Documents;
 
   readonly #key: string;
   readonly #secret: string;
@@ -72,6 +78,9 @@ export class Tano {
     this.cases = new Cases(this);
     this.sessions = new Sessions(this);
     this.sandbox = new Sandbox(this);
+    this.signatureRequests = new SignatureRequests(this);
+    this.seals = new Seals(this);
+    this.documents = new Documents(this);
   }
 
   /**
@@ -100,6 +109,19 @@ export class Tano {
       contentType: response.headers.get("content-type") ?? "application/octet-stream",
       data: Buffer.from(await response.arrayBuffer()),
     }));
+  }
+
+  /** Un PDF téléchargé, avec ce que disent ses en-têtes : empreinte, version signée, bac à sable. */
+  async requestPdf(path: string, options: RequestOptions = {}): Promise<PdfFile> {
+    return this.#send("GET", path, "", undefined, options, async (response) => {
+      const signed = response.headers.get("x-tano-document-signed");
+      return {
+        data: Buffer.from(await response.arrayBuffer()),
+        sha256: response.headers.get("x-tano-document-sha256"),
+        signed: signed === null ? null : signed === "true",
+        sandbox: response.headers.get("x-tano-sandbox") === "true",
+      };
+    });
   }
 
   /** Une requête brute, pour une route que le SDK n'expose pas encore. */
@@ -303,6 +325,17 @@ class Sandbox {
       {},
       options,
     );
+  }
+
+  /** Bac à sable : faire signer un signataire invité, comme s'il avait ouvert la page, saisi le
+   * code et signé. En ordre séquentiel, dans l'ordre. */
+  sign(requestId: string, signerId: string, options?: RequestOptions): Promise<SandboxAnswer> {
+    return simulateAnswer(this.client, requestId, signerId, "sign", options);
+  }
+
+  /** Bac à sable : le faire refuser. La demande s'arrête. */
+  decline(requestId: string, signerId: string, options?: RequestOptions): Promise<SandboxAnswer> {
+    return simulateAnswer(this.client, requestId, signerId, "decline", options);
   }
 }
 
