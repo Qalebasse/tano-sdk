@@ -100,13 +100,26 @@ demande = tano.signature_requests.create(
     name="Bail — appartement Cocody",
     reference="BAIL-2026-118",
     documents=[{"filename": "bail.pdf", "content": open("bail.pdf", "rb").read()}],
-    signers=[{
-        "given_name": "Aya", "family_name": "Koné",
-        "email": "aya.kone@exemple.ci", "auth_method": "otp_email",
-        # En points PDF, depuis le coin bas gauche de la page.
-        "fields": [{"document": 0, "kind": "signature", "page": 1,
-                    "x": 60, "y": 80, "width": 170, "height": 50}],
-    }],
+    signers=[
+        {
+            "given_name": "Aya",
+            "family_name": "Koné",
+            "email": "aya.kone@exemple.ci",
+            "auth_method": "otp_email",
+            # En points PDF, depuis le coin bas gauche de la page.
+            "fields": [
+                {
+                    "document": 0,
+                    "kind": "signature",
+                    "page": 1,
+                    "x": 60,
+                    "y": 80,
+                    "width": 170,
+                    "height": 50,
+                }
+            ],
+        }
+    ],
     activate=True,
 )
 

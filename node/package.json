@@ -24,7 +24,15 @@
     "prepublishOnly": "pnpm run build"
   },
   "homepage": "https://docs.tano.africa",
-  "keywords": ["tano", "kyc", "identity", "verification", "e-signature", "electronic-seal", "africa"],
+  "keywords": [
+    "tano",
+    "kyc",
+    "identity",
+    "verification",
+    "e-signature",
+    "electronic-seal",
+    "africa"
+  ],
   "publishConfig": {
     "access": "public"
   }
