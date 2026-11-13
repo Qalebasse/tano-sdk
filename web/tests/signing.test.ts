@@ -36,7 +36,7 @@ describe("mountSigning", () => {
   it("répond à la poignée de main, et rapporte l'issue", () => {
     const onSigned = vi.fn();
     const onStep = vi.fn();
-    const { frameWindow, post, iframe } = mountPage({ onSigned, onStep });
+    const { frameWindow, post, iframe } = mountPage({ onSigned, onStep, height: "640px" });
     post({ type: "tano:hello", version: 1 });
     expect(frameWindow.postMessage).toHaveBeenCalledWith({ type: "tano:init", version: 1 }, ORIGIN);
     post({ type: "tano:signing:step", step: "code" });
@@ -44,7 +44,8 @@ describe("mountSigning", () => {
     expect(onStep).toHaveBeenCalledWith("code");
     expect(onSigned).toHaveBeenCalledWith("completed");
     // Une hauteur fixe : la page défile dans son cadre, le cadre ne la suit pas.
-    expect(iframe.style.height).toBe("min(720px, 85vh)");
+    post({ type: "tano:resize", height: 1100 });
+    expect(iframe.style.height).toBe("640px");
   });
 
   it("n'écoute ni une autre origine ni une autre fenêtre", () => {
