@@ -271,7 +271,7 @@ def test_template_document_reads_headers() -> None:
             b"%PDF modele",
         )
     )
-    fichier = Tano(KEY, transport=fake).signature_templates.download("stpl_1", "stdoc_1")
+    fichier = Tano(KEY, transport=fake).signature_templates.document("stpl_1", "stdoc_1")
     assert fake.calls[0].url == (
         "https://api.tano.africa/v1/signature-templates/stpl_1/documents/stdoc_1"
     )

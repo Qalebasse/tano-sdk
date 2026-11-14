@@ -320,7 +320,7 @@ class SignatureTemplates:
         """Supprimer un modèle. Les demandes déjà tirées gardent leurs documents."""
         self._client.request("DELETE", f"/v1/signature-templates/{_id(template_id)}")
 
-    def download(self, template_id: str, document_id: str) -> PdfFile:
+    def document(self, template_id: str, document_id: str) -> PdfFile:
         """Un PDF du modèle (`documents[].id`)."""
         return PdfFile.from_response(
             self._client.request_bytes(

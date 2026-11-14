@@ -234,7 +234,7 @@ export class SignatureTemplates {
   }
 
   /** Un PDF du modèle (`documents[].id`). */
-  download(templateId: string, documentId: string, options?: RequestOptions): Promise<PdfFile> {
+  document(templateId: string, documentId: string, options?: RequestOptions): Promise<PdfFile> {
     return this.client.requestPdf(
       `/v1/signature-templates/${id(templateId)}/documents/${id(documentId)}`,
       options,

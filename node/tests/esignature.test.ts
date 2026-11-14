@@ -272,7 +272,7 @@ describe("les modèles de signature", () => {
         headers: { "content-type": "application/pdf", "x-tano-document-sha256": "cd34" },
       }),
     );
-    const fichier = await tano.signatureTemplates.download("stpl_1", "stdoc_1");
+    const fichier = await tano.signatureTemplates.document("stpl_1", "stdoc_1");
     expect(calls[0]?.url).toBe(
       "https://api.tano.africa/v1/signature-templates/stpl_1/documents/stdoc_1",
     );
