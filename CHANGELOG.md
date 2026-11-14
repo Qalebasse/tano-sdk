@@ -1,5 +1,19 @@
 # Journal des versions des paquets npm
 
+## 0.3.0 — `@tano-africa/node` (et `tano-sdk` 0.3.0 sur PyPI)
+
+- Modèles de signature : `signatureTemplates` (`signature_templates` en Python) — enregistrer un
+  modèle (documents, rôles et leurs champs), le lister, le lire, le supprimer, télécharger un de
+  ses PDF (`document`).
+- Une demande se tire d'un modèle : `template_id` dans `signatureRequests.create`, avec une
+  personne par rôle ; `name` devient facultatif et `documents` ne s'envoie pas. La réponse porte
+  `template_id`. Raccourci : `signatureTemplates.createRequest` (`create_request` en Python).
+- Documents cachés : `signers[].hidden_documents`, les indices des documents qu'un signataire ne
+  voit pas ; la réponse rend leurs identifiants (`sd_…`).
+- L'en-tête `User-Agent` annonce `tano-node/0.3.0` et `tano-python/0.3.0`.
+
+Aucun changement sur la vérification d'identité.
+
 ## 0.2.0 — `@tano-africa/node` (et `tano-sdk` 0.2.0 sur PyPI)
 
 - Signature électronique : `signatureRequests` (`signature_requests` en Python) — créer et

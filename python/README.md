@@ -73,7 +73,7 @@ Tano(
 | `cases.erase(case_id)` | `POST /v1/cases/{id}/erasure` | Effacer les données personnelles d'un dossier clos. Permission `personal_data` |
 | `sessions.create(case_id, locale=None, lifetime_minutes=None, return_url=None)` | `POST /v1/sessions` | L'`url` du parcours, rendue une seule fois |
 | `sandbox.submit(case_id)` | `POST /v1/sandbox/cases/{id}/submit` | Clés de bac à sable seulement ; le nom de famille déclaré choisit l'issue |
-| `signature_requests.create(name, documents, signers, reference=None, ordering=None, message=None, locale=None, expires_in_days=None, reminder_days=None, activate=False)` | `POST /v1/signature-requests` | Signée. Les PDF en `bytes` sont encodés en base 64 |
+| `signature_requests.create(signers, name=None, documents=None, template_id=None, reference=None, ordering=None, message=None, locale=None, expires_in_days=None, reminder_days=None, activate=False)` | `POST /v1/signature-requests` | Signée. Les PDF en `bytes` sont encodés en base 64. Avec `template_id`, ni `documents` ni champs |
 | `signature_requests.retrieve(request_id)` | `GET /v1/signature-requests/{id}` | État, documents, signataires |
 | `signature_requests.list(status=None, reference=None, limit=None)` | `GET /v1/signature-requests` | `data` |
 | `signature_requests.activate(request_id)` | `POST …/{id}/activate` | Envoyer un brouillon |
@@ -86,6 +86,12 @@ Tano(
 | `signature_requests.remind(request_id, signer_id)` | `POST …/signers/{id}/remind` | Relancer, avec un nouveau lien. Une fois par heure au plus |
 | `signature_requests.download(request_id, document_id)` | `GET …/documents/{id}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
 | `signature_requests.audit_trail(request_id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve |
+| `signature_templates.create(name, documents, roles, ordering=None, expires_in_days=None, message=None, reminder_days=None, idempotency_key=None)` | `POST /v1/signature-templates` | Signée, idempotente |
+| `signature_templates.list()` | `GET /v1/signature-templates` | `data` : nombre de `documents` et de `roles` |
+| `signature_templates.retrieve(template_id)` | `GET /v1/signature-templates/{id}` | Documents, rôles et leurs champs |
+| `signature_templates.delete(template_id)` | `DELETE /v1/signature-templates/{id}` | Les demandes déjà tirées gardent leurs documents |
+| `signature_templates.document(template_id, document_id)` | `GET …/{id}/documents/{id}` | `PdfFile` : un PDF du modèle |
+| `signature_templates.create_request(template_id, signers, **params)` | `POST /v1/signature-requests` | `signature_requests.create` avec `template_id` |
 | `sandbox.sign(request_id, signer_id)`, `sandbox.decline(…)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement |
 | `seals.profiles()` | `GET /v1/seal-profiles` | Les profils utilisables |
 | `seals.create(profile_id, document, reference=None)` | `POST /v1/seals` | Signée, synchrone |
@@ -150,6 +156,61 @@ Une demande dont les signataires n'ont aucun `fields` mais dont le PDF porte des
 complète. La réponse rend `signers[].fields`, ceux des ancres compris. Une ancre fausse est
 refusée avec `invalid_anchor`. Voir
 [Placer les champs](https://docs.tano.africa/signature-electronique/champs/).
+
+### Cacher des documents à un signataire
+
+`hidden_documents` liste, dans un signataire, les indices (à partir de 0) des documents qu'il ne
+voit pas. Un signataire ou un approbateur en voit au moins un ; une personne en copie peut ne rien
+voir. Aucun champ ne se pose sur un document caché (`invalid_field`). La réponse rend, pour chaque
+signataire, les identifiants (`sd_…`) de ses documents cachés.
+
+### Modèles de signature
+
+Un modèle garde des documents et des rôles (`Locataire`, `Bailleur`…) avec leurs champs. Une
+demande tirée d'un modèle ne porte plus que les personnes, une par rôle, dans l'ordre des rôles.
+
+```python
+modele = tano.signature_templates.create(
+    name="Bail d'habitation",
+    documents=[{"filename": "bail.pdf", "content": open("bail.pdf", "rb").read()}],
+    roles=[
+        {
+            "label": "Locataire",
+            "role": "signer",
+            "fields": [
+                {
+                    "document": 0,
+                    "kind": "signature",
+                    "page": 1,
+                    "x": 60,
+                    "y": 80,
+                    "width": 170,
+                    "height": 50,
+                }
+            ],
+        }
+    ],
+)
+
+# Ni documents ni champs : ils viennent du modèle. `name` vaut celui du modèle par défaut.
+demande = tano.signature_requests.create(
+    template_id=modele["id"],
+    reference="BAIL-2026-119",
+    signers=[
+        {
+            "given_name": "Aya",
+            "family_name": "Koné",
+            "email": "aya.kone@exemple.ci",
+            "auth_method": "otp_email",
+        }
+    ],
+    activate=True,
+)
+```
+
+`ordering`, `expires_in_days`, `message` et `reminder_days` l'emportent sur le modèle s'ils sont
+envoyés. Un nombre de personnes qui ne correspond pas aux rôles est refusé (`invalid_request`, le
+message nomme les rôles) ; un modèle absent répond `signature_template_not_found`.
 
 ## Webhooks
 

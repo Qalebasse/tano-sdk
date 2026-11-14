@@ -18,10 +18,16 @@ from typing import Any, Callable, Union
 from urllib.parse import quote, urlencode
 
 from tano_sdk.errors import TanoApiError, TanoConnectionError, TanoError
-from tano_sdk.esignature import Documents, Seals, SignatureRequests, simulate_answer
+from tano_sdk.esignature import (
+    Documents,
+    Seals,
+    SignatureRequests,
+    SignatureTemplates,
+    simulate_answer,
+)
 from tano_sdk.signature import parse_key, request_signature
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 DEFAULT_BASE_URL = "https://api.tano.africa"
 _RETRYABLE = frozenset({429, 500, 502, 503, 504})
 
@@ -92,6 +98,7 @@ class Tano:
         self.sessions = Sessions(self)
         self.sandbox = Sandbox(self)
         self.signature_requests = SignatureRequests(self)
+        self.signature_templates = SignatureTemplates(self)
         self.seals = Seals(self)
         self.documents = Documents(self)
 

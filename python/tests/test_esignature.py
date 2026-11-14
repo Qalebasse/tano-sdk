@@ -166,3 +166,146 @@ def test_update_reactivate_and_update_signer() -> None:
     tano.signature_requests.update_signer("sr_1", "ss_1", phone="+2250701021234")
     assert fake.calls[2].url.endswith("/v1/signature-requests/sr_1/signers/ss_1")
     assert sent(fake.calls[2]) == {"phone": "+2250701021234"}
+
+
+def test_hidden_documents_on_signer() -> None:
+    fake = Fake(
+        reply(201, {"id": "sr_1", "signers": [{"id": "ss_1", "hidden_documents": ["sd_2"]}]})
+    )
+    demande = Tano(KEY, transport=fake).signature_requests.create(
+        name="Bail",
+        documents=[
+            {"filename": "bail.pdf", "content": "JVBERi0="},
+            {"filename": "annexe.pdf", "content": "JVBERi0="},
+        ],
+        signers=[
+            {
+                "given_name": "Aya",
+                "family_name": "Koné",
+                "email": "aya@exemple.ci",
+                "auth_method": "otp_email",
+                "hidden_documents": [1],
+            }
+        ],
+    )
+    assert sent(fake.calls[0])["signers"] == [
+        {
+            "given_name": "Aya",
+            "family_name": "Koné",
+            "email": "aya@exemple.ci",
+            "auth_method": "otp_email",
+            "hidden_documents": [1],
+        }
+    ]
+    assert demande["signers"][0]["hidden_documents"] == ["sd_2"]
+
+
+def test_template_creation_is_signed_and_idempotent() -> None:
+    fake = Fake(reply(201, {"id": "stpl_1", "roles": []}))
+    pdf = b"%PDF-1.7 bail"
+    modele = Tano(KEY, transport=fake).signature_templates.create(
+        name="Bail type",
+        documents=[{"filename": "bail.pdf", "content": pdf}],
+        roles=[
+            {
+                "label": "Locataire",
+                "role": "signer",
+                "fields": [
+                    {
+                        "document": 0,
+                        "kind": "signature",
+                        "page": 1,
+                        "x": 60,
+                        "y": 80,
+                        "width": 170,
+                        "height": 50,
+                    }
+                ],
+                "hidden_documents": [],
+            }
+        ],
+        reminder_days=[3],
+        idempotency_key="modele-bail-1",
+    )
+    assert modele["id"] == "stpl_1"
+    call = fake.calls[0]
+    assert call.method == "POST"
+    assert call.url == "https://api.tano.africa/v1/signature-templates"
+    body = sent(call)
+    assert body["name"] == "Bail type"
+    assert body["documents"] == [
+        {"filename": "bail.pdf", "content": base64.b64encode(pdf).decode()}
+    ]
+    assert body["reminder_days"] == [3]
+    assert "ordering" not in body
+    assert call.headers["Idempotency-Key"] == "modele-bail-1"
+    assert call.body is not None
+    assert call.headers["X-Tano-Signature"] == request_signature(
+        SECRET, call.headers["X-Tano-Timestamp"], "POST", "/v1/signature-templates", call.body
+    )
+
+
+def test_template_list_retrieve_delete() -> None:
+    fake = Fake(
+        reply(200, {"data": [{"id": "stpl_1", "name": "Bail type", "documents": 2, "roles": 1}]}),
+        reply(200, {"id": "stpl_1", "name": "Bail type"}),
+        HttpResponse(204, {}, b""),
+    )
+    tano = Tano(KEY, transport=fake)
+    assert tano.signature_templates.list()["data"][0]["documents"] == 2
+    assert fake.calls[0].url == "https://api.tano.africa/v1/signature-templates"
+    assert "X-Tano-Signature" not in fake.calls[0].headers
+    assert tano.signature_templates.retrieve("stpl_1")["name"] == "Bail type"
+    assert fake.calls[1].url == "https://api.tano.africa/v1/signature-templates/stpl_1"
+    tano.signature_templates.delete("stpl_1")
+    assert fake.calls[2].method == "DELETE"
+    assert fake.calls[2].url == "https://api.tano.africa/v1/signature-templates/stpl_1"
+    assert fake.calls[2].headers["X-Tano-Signature"].startswith("v2=")
+
+
+def test_template_document_reads_headers() -> None:
+    fake = Fake(
+        HttpResponse(
+            200,
+            {"content-type": "application/pdf", "x-tano-document-sha256": "cd34"},
+            b"%PDF modele",
+        )
+    )
+    fichier = Tano(KEY, transport=fake).signature_templates.download("stpl_1", "stdoc_1")
+    assert fake.calls[0].url == (
+        "https://api.tano.africa/v1/signature-templates/stpl_1/documents/stdoc_1"
+    )
+    assert fichier == PdfFile(data=b"%PDF modele", sha256="cd34", signed=None, sandbox=False)
+
+
+def test_request_from_template() -> None:
+    fake = Fake(
+        reply(201, {"id": "sr_1", "template_id": "stpl_1"}),
+        reply(201, {"id": "sr_2", "template_id": "stpl_1"}),
+    )
+    tano = Tano(KEY, transport=fake)
+    personne = {
+        "given_name": "Aya",
+        "family_name": "Koné",
+        "email": "aya@exemple.ci",
+        "auth_method": "otp_email",
+    }
+    demande = tano.signature_requests.create(
+        template_id="stpl_1", signers=[personne], reference="BAIL-1", activate=True
+    )
+    assert demande["template_id"] == "stpl_1"
+    assert fake.calls[0].url == "https://api.tano.africa/v1/signature-requests"
+    assert sent(fake.calls[0]) == {
+        "template_id": "stpl_1",
+        "signers": [personne],
+        "activate": True,
+        "reference": "BAIL-1",
+    }
+    tano.signature_templates.create_request("stpl_1", signers=[personne], message="Bonjour")
+    assert fake.calls[1].url == "https://api.tano.africa/v1/signature-requests"
+    assert sent(fake.calls[1]) == {
+        "template_id": "stpl_1",
+        "signers": [personne],
+        "activate": False,
+        "message": "Bonjour",
+    }

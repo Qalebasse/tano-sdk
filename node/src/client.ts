@@ -1,7 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { type ApiErrorBody, TanoApiError, TanoConnectionError, TanoError } from "./errors.js";
-import { Documents, Seals, SignatureRequests, simulateAnswer } from "./esignature.js";
+import {
+  Documents,
+  Seals,
+  SignatureRequests,
+  SignatureTemplates,
+  simulateAnswer,
+} from "./esignature.js";
 import { parseKey, requestSignature } from "./signature.js";
 import type {
   Case,
@@ -22,7 +28,7 @@ import type {
   SessionCreateParams,
 } from "./types.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 const DEFAULT_BASE_URL = "https://api.tano.africa";
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 
@@ -51,6 +57,7 @@ export class Tano {
   readonly sessions: Sessions;
   readonly sandbox: Sandbox;
   readonly signatureRequests: SignatureRequests;
+  readonly signatureTemplates: SignatureTemplates;
   readonly seals: Seals;
   readonly documents: Documents;
 
@@ -79,6 +86,7 @@ export class Tano {
     this.sessions = new Sessions(this);
     this.sandbox = new Sandbox(this);
     this.signatureRequests = new SignatureRequests(this);
+    this.signatureTemplates = new SignatureTemplates(this);
     this.seals = new Seals(this);
     this.documents = new Documents(this);
   }

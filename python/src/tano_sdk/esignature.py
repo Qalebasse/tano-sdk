@@ -30,6 +30,10 @@ def _id(value: str) -> str:
     return quote(value, safe="")
 
 
+def _documents(documents: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
+    return [{"filename": d["filename"], "content": to_base64(d["content"])} for d in documents]
+
+
 @dataclass(frozen=True)
 class PdfFile:
     """Un PDF téléchargé : ses octets et ce que disent ses en-têtes."""
@@ -64,9 +68,10 @@ class SignatureRequests:
     def create(
         self,
         *,
-        name: str,
-        documents: Iterable[Mapping[str, Any]],
         signers: Sequence[Mapping[str, Any]],
+        name: str | None = None,
+        documents: Iterable[Mapping[str, Any]] | None = None,
+        template_id: str | None = None,
         reference: str | None = None,
         ordering: str | None = None,
         level: str | None = None,
@@ -85,21 +90,28 @@ class SignatureRequests:
 
         `documents` : `{"filename": …, "content": <octets ou base 64>}`. `signers` : comme dans
         l'API, chacun avec ses `fields` en points PDF depuis le coin bas gauche de la page — ou
-        des ancres `{{s1|signature}}` dans le PDF.
+        des ancres `{{s1|signature}}` dans le PDF — et ses `hidden_documents`, les indices des
+        documents qu'il ne voit pas.
+
+        `template_id` : la demande est tirée d'un modèle, qui en donne les documents, les rôles et
+        leurs champs. `name` devient facultatif (le nom du modèle) et `documents` ne s'envoie
+        pas ; `signers` compte une personne par rôle, dans l'ordre des rôles, sans `fields` ni
+        `hidden_documents`.
 
         `delivery` : `email` (Tano invite et relance) ou `none` (vous remettez le lien vous-même).
         `custom_text` : `invitation_subject`, `invitation_body`, `reminder_subject`,
         `reminder_body`. `redirect_urls` : `success`, `decline`, `error`, en HTTPS. Chaque
         signataire peut les préciser à son tour.
         """
-        body: dict[str, Any] = {
-            "name": name,
-            "documents": [
-                {"filename": d["filename"], "content": to_base64(d["content"])} for d in documents
-            ],
-            "signers": [dict(s) for s in signers],
-            "activate": activate,
-        }
+        body: dict[str, Any] = {}
+        if template_id is not None:
+            body["template_id"] = template_id
+        if name is not None:
+            body["name"] = name
+        if documents is not None:
+            body["documents"] = _documents(documents)
+        body["signers"] = [dict(s) for s in signers]
+        body["activate"] = activate
         for key, value in (
             ("reference", reference),
             ("ordering", ordering),
@@ -249,6 +261,80 @@ class SignatureRequests:
         """Le fichier de preuve, une fois la demande complétée."""
         return PdfFile.from_response(
             self._client.request_bytes(f"/v1/signature-requests/{_id(request_id)}/audit-trail")
+        )
+
+
+class SignatureTemplates:
+    def __init__(self, client: Tano) -> None:
+        self._client = client
+
+    def create(
+        self,
+        *,
+        name: str,
+        documents: Iterable[Mapping[str, Any]],
+        roles: Sequence[Mapping[str, Any]],
+        ordering: str | None = None,
+        expires_in_days: int | None = None,
+        message: str | None = None,
+        reminder_days: Iterable[int] | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Enregistrer un modèle : ses documents, et des rôles à la place des signataires.
+
+        `documents` : `{"filename": …, "content": <octets ou base 64>}`. `roles` : `label` (de 1
+        à 60 caractères, unique sans tenir compte de la casse), `role` (`signer`, `approver` ou
+        `viewer`), `position`, `fields` comme dans une demande, `hidden_documents`.
+        """
+        body: dict[str, Any] = {
+            "name": name,
+            "documents": _documents(documents),
+            "roles": [dict(r) for r in roles],
+        }
+        for key, value in (
+            ("ordering", ordering),
+            ("expires_in_days", expires_in_days),
+            ("message", message),
+        ):
+            if value is not None:
+                body[key] = value
+        if reminder_days is not None:
+            body["reminder_days"] = list(reminder_days)
+        return self._client.request(  # type: ignore[no-any-return]
+            "POST", "/v1/signature-templates", body, idempotency_key=idempotency_key
+        )
+
+    def list(self) -> dict[str, Any]:
+        """Les modèles de l'organisation : `data`, avec le nombre de leurs documents et de leurs
+        rôles."""
+        return self._client.request(  # type: ignore[no-any-return]
+            "GET", "/v1/signature-templates"
+        )
+
+    def retrieve(self, template_id: str) -> dict[str, Any]:
+        return self._client.request(  # type: ignore[no-any-return]
+            "GET", f"/v1/signature-templates/{_id(template_id)}"
+        )
+
+    def delete(self, template_id: str) -> None:
+        """Supprimer un modèle. Les demandes déjà tirées gardent leurs documents."""
+        self._client.request("DELETE", f"/v1/signature-templates/{_id(template_id)}")
+
+    def download(self, template_id: str, document_id: str) -> PdfFile:
+        """Un PDF du modèle (`documents[].id`)."""
+        return PdfFile.from_response(
+            self._client.request_bytes(
+                f"/v1/signature-templates/{_id(template_id)}/documents/{_id(document_id)}"
+            )
+        )
+
+    def create_request(
+        self, template_id: str, *, signers: Sequence[Mapping[str, Any]], **params: Any
+    ) -> dict[str, Any]:
+        """Créer une demande depuis ce modèle : `signature_requests.create` avec
+        `template_id`."""
+        return self._client.signature_requests.create(
+            template_id=template_id, signers=signers, **params
         )
 
 
