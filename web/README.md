@@ -69,6 +69,30 @@ rien.
 
 Rend `{ iframe: HTMLIFrameElement, destroy(): void }`.
 
+## La signature électronique dans votre page
+
+Votre serveur obtient le lien du signataire (`POST /v1/signature-requests/{id}/signers/{sid}/link`,
+de préférence avec `delivery: "none"` pour que Tano ne lui écrive pas), et votre page l'affiche :
+
+```ts
+import { mountSigning } from "@tano-africa/web";
+
+const page = mountSigning("#signature", {
+  url: lienDuSignataire, // https://verify.tano.africa/signer#tsig_…
+  onStep: (step) => console.log(step), // "read", "code", "consent"
+  onSigned: (requestStatus) => {
+    // "completed" s'il était le dernier : téléchargez le document signé côté serveur.
+  },
+  onDeclined: () => {},
+  onEnded: (reason) => {}, // "closed" : expirée, annulée ou déjà close
+});
+```
+
+Comme pour le parcours, votre origine doit être parmi les domaines autorisés ; la page ne s'affiche
+qu'après la poignée de main. Le cadre a une hauteur fixe (`height`, `min(720px, 85vh)` par défaut) :
+la visionneuse et le panneau de signature défilent à l'intérieur, comme sur un téléphone. Intégrée, elle ne redirige jamais : c'est votre page qui décide de la
+suite. Aucun nom, aucun document, aucun jeton ne passe par les événements.
+
 ## Fenêtre ou redirection
 
 ```ts

@@ -18,9 +18,10 @@ from typing import Any, Callable, Union
 from urllib.parse import quote, urlencode
 
 from tano_sdk.errors import TanoApiError, TanoConnectionError, TanoError
+from tano_sdk.esignature import Documents, Seals, SignatureRequests, simulate_answer
 from tano_sdk.signature import parse_key, request_signature
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 DEFAULT_BASE_URL = "https://api.tano.africa"
 _RETRYABLE = frozenset({429, 500, 502, 503, 504})
 
@@ -90,6 +91,9 @@ class Tano:
         self.cases = Cases(self)
         self.sessions = Sessions(self)
         self.sandbox = Sandbox(self)
+        self.signature_requests = SignatureRequests(self)
+        self.seals = Seals(self)
+        self.documents = Documents(self)
 
     def _timestamp(self, method: str, target: str, payload: bytes) -> int:
         """L'horodatage à signer.
@@ -122,7 +126,7 @@ class Tano:
         return _json(response.body)
 
     def request_bytes(self, path: str) -> HttpResponse:
-        """Une lecture binaire (une image) : la réponse telle quelle, `Content-Type` compris."""
+        """Une lecture binaire (une image, un PDF) : la réponse telle quelle, en-têtes compris."""
         return self._send("GET", path, None)
 
     def _send(
@@ -354,6 +358,15 @@ class Sandbox:
         return self._client.request(  # type: ignore[no-any-return]
             "POST", f"/v1/sandbox/cases/{quote(case_id, safe='')}/submit", {}
         )
+
+    def sign(self, request_id: str, signer_id: str) -> dict[str, Any]:
+        """Bac à sable : faire signer un signataire invité, comme s'il avait ouvert la page, saisi
+        le code et signé. En ordre séquentiel, dans l'ordre."""
+        return simulate_answer(self._client, request_id, signer_id, "sign")
+
+    def decline(self, request_id: str, signer_id: str) -> dict[str, Any]:
+        """Bac à sable : le faire refuser. La demande s'arrête."""
+        return simulate_answer(self._client, request_id, signer_id, "decline")
 
 
 def _query_string(query: Query | None) -> str:

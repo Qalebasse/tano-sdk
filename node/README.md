@@ -3,8 +3,8 @@
 [![npm](https://img.shields.io/npm/v/@tano-africa/node.svg)](https://www.npmjs.com/package/@tano-africa/node)
 [![licence](https://img.shields.io/npm/l/@tano-africa/node.svg)](LICENSE)
 
-La bibliothèque Node.js officielle de l'API de vérification d'identité
-[Tano](https://docs.tano.africa).
+La bibliothèque Node.js officielle de l'API [Tano](https://docs.tano.africa) : vérification
+d'identité, signature électronique et cachet électronique.
 
 - Signature des requêtes (HMAC-SHA256, v2) et protection contre le rejeu, prises en charge
 - Clé d'idempotence sur chaque écriture, conservée d'un réessai à l'autre
@@ -97,6 +97,79 @@ new Tano({
 | Méthode | Route | Notes |
 | --- | --- | --- |
 | `sandbox.submit(caseId)` | `POST /v1/sandbox/cases/{id}/submit` | Clés de bac à sable seulement. Le nom de famille déclaré choisit l'issue : `TESTPASS`, `TESTREVIEW`, `TESTFAIL`, `TESTSANCTION`, `TESTSLOW`, `TESTDOWN` |
+
+### Signature électronique
+
+| Méthode | Route | Notes |
+| --- | --- | --- |
+| `signatureRequests.create(params, options?)` | `POST /v1/signature-requests` | Signée. Les PDF en `Buffer` sont encodés en base 64 ; `activate: true` envoie dans le même appel |
+| `signatureRequests.retrieve(id)` | `GET /v1/signature-requests/{id}` | État, documents, signataires |
+| `signatureRequests.list(params?)` | `GET /v1/signature-requests` | `status`, `reference`, `limit` |
+| `signatureRequests.activate(id)` | `POST …/{id}/activate` | Envoyer un brouillon |
+| `signatureRequests.cancel(id, reason)` | `POST …/{id}/cancel` | Annuler une demande en cours |
+| `signatureRequests.delete(id)` | `DELETE …/{id}` | Supprimer un brouillon |
+| `signatureRequests.link(id, signerId)` | `POST …/{id}/signers/{signerId}/link` | `{ url }` : le lien d'un signataire invité ; il remplace le précédent |
+| `signatureRequests.update(id, { metadata?, expires_at? })` | `PATCH …/{id}` | Métadonnées (fusionnées, `null` retire) ; report de l'échéance d'une demande en cours |
+| `signatureRequests.reactivate(id, jours?)` | `POST …/{id}/reactivate` | Faire repartir une demande expirée ; ce qui est signé le reste |
+| `signatureRequests.updateSigner(id, signerId, { email?, phone?, … })` | `PATCH …/{id}/signers/{signerId}` | Corriger un signataire qui n'a pas répondu ; invité, il reçoit un nouveau lien |
+| `signatureRequests.remind(id, signerId)` | `POST …/{id}/signers/{signerId}/remind` | Relancer : Tano renvoie l'invitation, avec un nouveau lien. Une fois par heure au plus |
+| `signatureRequests.download(id, documentId)` | `GET …/{id}/documents/{documentId}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
+| `signatureRequests.auditTrail(id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve, une fois la demande complétée |
+| `sandbox.sign(id, signerId)` / `sandbox.decline(id, signerId)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement : simuler la réponse d'un signataire invité |
+
+```ts
+import { readFile, writeFile } from "node:fs/promises";
+
+const demande = await tano.signatureRequests.create({
+  name: "Bail — appartement Cocody",
+  reference: "BAIL-2026-118",
+  documents: [{ filename: "bail.pdf", content: await readFile("bail.pdf") }],
+  signers: [
+    {
+      given_name: "Aya",
+      family_name: "Koné",
+      email: "aya.kone@exemple.ci",
+      auth_method: "otp_email",
+      // En points PDF, depuis le coin bas gauche de la page.
+      fields: [{ document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 }],
+    },
+  ],
+  activate: true,
+});
+
+// Plus tard, à la réception de `signature_request.completed` :
+const signe = await tano.signatureRequests.download(demande.id, demande.documents[0].id);
+await writeFile("bail-signe.pdf", signe.data);
+```
+
+Le guide : [Faire signer un document](https://docs.tano.africa/signature-electronique/faire-signer/).
+
+#### Placer les champs par ancre
+
+Plutôt que des coordonnées, écrivez l'ancre dans le PDF, de préférence en blanc : le service pose
+le champ à sa place. `s1` est le premier signataire de la liste.
+
+```text
+{{s1|signature}}
+{{s1|text|160|20|label=Ville|default_value=Abidjan}}
+{{s1|radio|14|14|group=duree|value=12 mois}}
+{{s1|mention|220|30|mention=Lu et approuvé le %date%}}
+```
+
+Une demande dont les signataires n'ont aucun `fields` mais dont le PDF porte des ancres est
+complète. La réponse rend `signers[].fields`, ceux des ancres compris. Une ancre fausse est
+refusée avec `invalid_anchor`. Voir
+[Placer les champs](https://docs.tano.africa/signature-electronique/champs/).
+
+### Cachet électronique
+
+| Méthode | Route | Notes |
+| --- | --- | --- |
+| `seals.profiles()` | `GET /v1/seal-profiles` | Les profils utilisables : les vôtres, puis celui de Tano |
+| `seals.create({ profile_id, document, reference? })` | `POST /v1/seals` | Signée, synchrone. `document` en `Buffer` ou en base 64 |
+| `seals.retrieve(id)` | `GET /v1/seals/{id}` | |
+| `seals.download(id)` | `GET /v1/seals/{id}/download` | `PdfFile` |
+| `documents.verify(document)` | `POST /v1/verify` | Les signatures et cachets d'un PDF, et leur intégrité. Toute clé |
 
 ### Requêtes brutes
 

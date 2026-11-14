@@ -1,7 +1,7 @@
 # tano-sdk
 
-La bibliothèque Python officielle de l'API de vérification d'identité
-[Tano](https://docs.tano.africa).
+La bibliothèque Python officielle de l'API [Tano](https://docs.tano.africa) : vérification
+d'identité, signature électronique et cachet électronique.
 
 - Signature des requêtes (HMAC-SHA256, v2) et protection contre le rejeu, prises en charge
 - Clé d'idempotence sur chaque écriture, conservée d'un réessai à l'autre
@@ -73,11 +73,83 @@ Tano(
 | `cases.erase(case_id)` | `POST /v1/cases/{id}/erasure` | Effacer les données personnelles d'un dossier clos. Permission `personal_data` |
 | `sessions.create(case_id, locale=None, lifetime_minutes=None, return_url=None)` | `POST /v1/sessions` | L'`url` du parcours, rendue une seule fois |
 | `sandbox.submit(case_id)` | `POST /v1/sandbox/cases/{id}/submit` | Clés de bac à sable seulement ; le nom de famille déclaré choisit l'issue |
+| `signature_requests.create(name, documents, signers, reference=None, ordering=None, message=None, locale=None, expires_in_days=None, reminder_days=None, activate=False)` | `POST /v1/signature-requests` | Signée. Les PDF en `bytes` sont encodés en base 64 |
+| `signature_requests.retrieve(request_id)` | `GET /v1/signature-requests/{id}` | État, documents, signataires |
+| `signature_requests.list(status=None, reference=None, limit=None)` | `GET /v1/signature-requests` | `data` |
+| `signature_requests.activate(request_id)` | `POST …/{id}/activate` | Envoyer un brouillon |
+| `signature_requests.cancel(request_id, reason)` | `POST …/{id}/cancel` | Annuler une demande en cours |
+| `signature_requests.delete(request_id)` | `DELETE …/{id}` | Supprimer un brouillon |
+| `signature_requests.link(request_id, signer_id)` | `POST …/signers/{id}/link` | Le lien d'un signataire invité ; il remplace le précédent |
+| `signature_requests.update(request_id, metadata=None, expires_at=None)` | `PATCH …/{id}` | Métadonnées, ou report de l'échéance |
+| `signature_requests.reactivate(request_id, expires_in_days=30)` | `POST …/{id}/reactivate` | Faire repartir une demande expirée |
+| `signature_requests.update_signer(request_id, signer_id, email=None, phone=None, …)` | `PATCH …/signers/{id}` | Corriger un signataire qui n'a pas répondu |
+| `signature_requests.remind(request_id, signer_id)` | `POST …/signers/{id}/remind` | Relancer, avec un nouveau lien. Une fois par heure au plus |
+| `signature_requests.download(request_id, document_id)` | `GET …/documents/{id}/download` | `PdfFile` : `data`, `sha256`, `signed`, `sandbox` |
+| `signature_requests.audit_trail(request_id)` | `GET …/{id}/audit-trail` | `PdfFile` : le fichier de preuve |
+| `sandbox.sign(request_id, signer_id)`, `sandbox.decline(…)` | `POST /v1/sandbox/signature-requests/…` | Clés de bac à sable seulement |
+| `seals.profiles()` | `GET /v1/seal-profiles` | Les profils utilisables |
+| `seals.create(profile_id, document, reference=None)` | `POST /v1/seals` | Signée, synchrone |
+| `seals.retrieve(seal_id)`, `seals.download(seal_id)` | `GET /v1/seals/{id}…` | `download` rend un `PdfFile` |
+| `documents.verify(document)` | `POST /v1/verify` | Les signatures et cachets d'un PDF, et leur intégrité |
 | `request(method, path, body=None, query=None, idempotency_key=None)` | toute route | Appel brut, avec signature, idempotence et réessais |
 
 `results["state"]` vaut `awaiting_applicant`, `processing`, `in_review`,
 `resubmission_requested` (pas un refus), `approved`, `rejected` (définitif), `expired` ou
 `abandoned`.
+
+### Faire signer un document
+
+```python
+demande = tano.signature_requests.create(
+    name="Bail — appartement Cocody",
+    reference="BAIL-2026-118",
+    documents=[{"filename": "bail.pdf", "content": open("bail.pdf", "rb").read()}],
+    signers=[
+        {
+            "given_name": "Aya",
+            "family_name": "Koné",
+            "email": "aya.kone@exemple.ci",
+            "auth_method": "otp_email",
+            # En points PDF, depuis le coin bas gauche de la page.
+            "fields": [
+                {
+                    "document": 0,
+                    "kind": "signature",
+                    "page": 1,
+                    "x": 60,
+                    "y": 80,
+                    "width": 170,
+                    "height": 50,
+                }
+            ],
+        }
+    ],
+    activate=True,
+)
+
+# Plus tard, à la réception de `signature_request.completed` :
+signe = tano.signature_requests.download(demande["id"], demande["documents"][0]["id"])
+open("bail-signe.pdf", "wb").write(signe.data)
+```
+
+Le guide : [Faire signer un document](https://docs.tano.africa/signature-electronique/faire-signer/).
+
+### Placer les champs par ancre
+
+Plutôt que des coordonnées, écrivez l'ancre dans le PDF, de préférence en blanc : le service pose
+le champ à sa place. `s1` est le premier signataire de la liste.
+
+```text
+{{s1|signature}}
+{{s1|text|160|20|label=Ville|default_value=Abidjan}}
+{{s1|radio|14|14|group=duree|value=12 mois}}
+{{s1|mention|220|30|mention=Lu et approuvé le %date%}}
+```
+
+Une demande dont les signataires n'ont aucun `fields` mais dont le PDF porte des ancres est
+complète. La réponse rend `signers[].fields`, ceux des ancres compris. Une ancre fausse est
+refusée avec `invalid_anchor`. Voir
+[Placer les champs](https://docs.tano.africa/signature-electronique/champs/).
 
 ## Webhooks
 
