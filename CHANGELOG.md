@@ -1,5 +1,22 @@
 # Journal des versions des paquets npm
 
+## 0.4.0 — `@tano-africa/node` (et `tano-sdk` 0.4.0 sur PyPI)
+
+- Groupes de signataires : une place de `signers[]` peut être tenue par un groupe, `group_name`
+  et `members` (de 2 à 10 membres, chacun avec son nom, son contact et `auth_method`) à la place
+  de la personne ; `role`, `position`, `fields`, `hidden_documents`, `delivery`, `custom_text` et
+  `redirect_urls` restent sur la place. Aussi dans une demande tirée d'un modèle.
+- En Node, `SignerParams` devient `PersonSignerParams | GroupSignerParams`, et
+  `TemplateSignerParams` `TemplatePersonSignerParams | TemplateGroupSignerParams` : une place
+  ne mêle pas une personne et un groupe. En Python, `PersonSigner`, `GroupSigner` et
+  `GroupMember` décrivent ces places pour un vérificateur de types.
+- Le premier membre qui signe tient la place ; les autres passent au nouveau statut
+  `released` (webhook `signer.released`). Un membre qui refuse refuse la demande.
+- Chaque signataire de la réponse porte `group` : `{ id, name }` pour un membre, `null` sinon.
+- L'en-tête `User-Agent` annonce `tano-node/0.4.0` et `tano-python/0.4.0`.
+
+Aucun changement sur la vérification d'identité.
+
 ## 0.3.0 — `@tano-africa/node` (et `tano-sdk` 0.3.0 sur PyPI)
 
 - Modèles de signature : `signatureTemplates` (`signature_templates` en Python) — enregistrer un

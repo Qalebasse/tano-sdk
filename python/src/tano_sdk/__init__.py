@@ -2,14 +2,17 @@
 
 from tano_sdk.client import VERSION, HttpRequest, HttpResponse, Tano, Transport
 from tano_sdk.errors import TanoApiError, TanoConnectionError, TanoError, WebhookSignatureError
-from tano_sdk.esignature import PdfFile
+from tano_sdk.esignature import GroupMember, GroupSigner, PdfFile, PersonSigner
 from tano_sdk.webhooks import verify_webhook
 
 __all__ = [
     "VERSION",
+    "GroupMember",
+    "GroupSigner",
     "HttpRequest",
     "HttpResponse",
     "PdfFile",
+    "PersonSigner",
     "Tano",
     "TanoApiError",
     "TanoConnectionError",

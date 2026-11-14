@@ -262,7 +262,9 @@ export type SignerStatus =
   | "opened"
   | "authenticated"
   | "signed"
-  | "declined";
+  | "declined"
+  /** Membre d'un groupe : un autre membre a signé à sa place. Terminal. */
+  | "released";
 
 export type FieldKind =
   | "signature"
@@ -321,7 +323,8 @@ export interface SignatureFieldParams {
   text?: string;
 }
 
-export interface SignerParams {
+/** La personne qui tient une place : son nom, son contact et son moyen d'authentification. */
+export interface SignerIdentity {
   given_name: string;
   family_name: string;
   /** Pour `otp_email`. */
@@ -329,13 +332,34 @@ export interface SignerParams {
   /** Pour `otp_sms`, au format international (`+2250701021234`). */
   phone?: string;
   auth_method: "otp_email" | "otp_sms";
-  /** `signer` par défaut ; `approver` approuve sans champ de signature, `viewer` reçoit une copie. */
+}
+
+/** Un membre d'un groupe : invité avec son propre lien et son propre code. */
+export type SignerGroupMember = SignerIdentity;
+
+/** Les champs d'une personne, absents d'une place tenue par un groupe. */
+type NoIdentity = { [K in keyof SignerIdentity]?: undefined };
+
+/** Une place tenue par un groupe : le premier membre qui signe la tient, les autres passent à
+ * `released`. Un membre qui refuse refuse la demande. */
+export interface SignerGroup {
+  /** De 1 à 60 caractères. */
+  group_name: string;
+  /** De 2 à 10 membres ; chacun compte dans la limite de signataires de la demande. */
+  members: readonly SignerGroupMember[];
+}
+
+/** Ce qu'une place porte, qu'une personne ou un groupe la tienne. */
+export interface SignerSlotParams {
+  /** `signer` par défaut ; `approver` approuve sans champ de signature, `viewer` reçoit une copie
+   * (jamais un groupe). */
   role?: "signer" | "approver" | "viewer";
   /** Son rang en ordre séquentiel, à partir de 1. */
   position?: number;
   locale?: "fr" | "en";
   /** Pour les heures calmes des relances. `Africa/Abidjan` par défaut. */
   time_zone?: string;
+  /** Pour un groupe, copiés pour chaque membre. */
   fields?: readonly SignatureFieldParams[];
   /** Les documents qu'il ne voit pas : leurs indices dans la demande, à partir de 0. Un
    * signataire ou un approbateur en voit au moins un ; aucun champ sur un document caché. */
@@ -347,6 +371,18 @@ export interface SignerParams {
   /** Ses adresses de retour, qui l'emportent, clé par clé, sur celles de la demande. */
   redirect_urls?: RedirectUrls;
 }
+
+/** Une place tenue par une personne. */
+export interface PersonSignerParams extends SignerIdentity, SignerSlotParams {
+  group_name?: undefined;
+  members?: undefined;
+}
+
+/** Une place tenue par un groupe : ni nom, ni contact, ni moyen d'authentification sur la place,
+ * ils sont sur chaque membre. */
+export interface GroupSignerParams extends SignerGroup, SignerSlotParams, NoIdentity {}
+
+export type SignerParams = PersonSignerParams | GroupSignerParams;
 
 /** `email` : Tano invite et relance. `none` : Tano n'écrit pas, vous remettez le lien vous-même
  * (`signatureRequests.link`). */
@@ -386,23 +422,25 @@ export interface SignatureRequestFromTemplateParams extends SignatureRequestBase
   /** Le nom du modèle par défaut. */
   name?: string;
   documents?: undefined;
-  /** Une personne par rôle, dans l'ordre des rôles du modèle. */
+  /** Une personne ou un groupe par rôle, dans l'ordre des rôles du modèle. */
   signers: readonly TemplateSignerParams[];
 }
 
+type TemplateSlotKeys = "locale" | "delivery" | "custom_text" | "redirect_urls";
+
 /** Une personne pour un rôle du modèle : son rang, son rôle et ses champs viennent du modèle. */
-export type TemplateSignerParams = Pick<
-  SignerParams,
-  | "given_name"
-  | "family_name"
-  | "email"
-  | "phone"
-  | "auth_method"
-  | "locale"
-  | "delivery"
-  | "custom_text"
-  | "redirect_urls"
+export type TemplatePersonSignerParams = Pick<
+  PersonSignerParams,
+  keyof SignerIdentity | TemplateSlotKeys | "group_name" | "members"
 >;
+
+/** Un groupe pour un rôle du modèle, à la place d'une personne. */
+export type TemplateGroupSignerParams = Pick<
+  GroupSignerParams,
+  keyof SignerIdentity | TemplateSlotKeys | "group_name" | "members"
+>;
+
+export type TemplateSignerParams = TemplatePersonSignerParams | TemplateGroupSignerParams;
 
 /** Ce qu'une demande accepte qu'elle vienne de vos documents ou d'un modèle. Pour une demande
  * tirée d'un modèle, `ordering`, `expires_in_days`, `message` et `reminder_days` l'emportent sur
@@ -461,6 +499,14 @@ export interface SignatureRequestSigner {
   readonly reminded_at?: string | null;
   /** Les identifiants (`sd_…`) des documents qu'il ne voit pas. */
   readonly hidden_documents?: readonly string[];
+  /** Le groupe dont il est membre ; `null` pour un signataire seul. */
+  readonly group: SignerGroupRef | null;
+}
+
+export interface SignerGroupRef {
+  /** `sgrp_…` */
+  readonly id: string;
+  readonly name: string;
 }
 
 export interface SignatureRequest {
