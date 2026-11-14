@@ -546,7 +546,8 @@ export type SignerRole = "signer" | "approver" | "viewer";
 export interface SignatureTemplateRoleParams {
   /** De 1 à 60 caractères, unique dans le modèle sans tenir compte de la casse. */
   label: string;
-  role: SignerRole;
+  /** `signer` par défaut. */
+  role?: SignerRole;
   /** Son rang en ordre séquentiel, à partir de 1. */
   position?: number;
   fields?: readonly SignatureFieldParams[];
