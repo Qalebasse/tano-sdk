@@ -168,6 +168,39 @@ voit pas. Un signataire ou un approbateur en voit au moins un ; une personne en 
 voir. Aucun champ ne se pose sur un document caché (`invalid_field`). La réponse rend, pour chaque
 signataire, les identifiants (`sd_…`) de ses documents cachés.
 
+#### Faire signer un groupe
+
+Une place peut être tenue par un groupe : `group_name` (de 1 à 60 caractères) et `members` (de 2
+à 10, chacun avec `given_name`, `family_name`, `email` ou `phone`, et `auth_method`) à la place
+de la personne. Le reste de la place ne change pas : `role`, `position`, `fields` (copiés pour
+chaque membre), `hidden_documents`, `delivery`, `custom_text`, `redirect_urls`. Le type
+`SignerParams` (`PersonSignerParams | GroupSignerParams`) refuse une place qui mêle les deux.
+
+```ts
+await tano.signatureRequests.create({
+  name: "Contrat de prestation",
+  documents: [{ filename: "contrat.pdf", content: await readFile("contrat.pdf") }],
+  signers: [
+    {
+      group_name: "Direction",
+      members: [
+        { given_name: "Aya", family_name: "Koné", email: "aya@exemple.ci", auth_method: "otp_email" },
+        { given_name: "Awa", family_name: "Traoré", phone: "+2250701021234", auth_method: "otp_sms" },
+      ],
+      fields: [{ document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 }],
+    },
+  ],
+  activate: true,
+});
+```
+
+Le premier membre qui signe tient la place ; les autres passent au statut `released` (leurs liens
+sont révoqués) et le webhook `signer.released` est émis pour chacun. Un membre qui refuse refuse
+la demande. Chaque membre est invité avec son propre lien et son propre code, compte dans la
+limite de 10 signataires, et figure dans `signers[]` avec `group: { id, name }` (`null` pour un
+signataire seul). Une copie (`viewer`) n'a pas de groupe. Dans une demande tirée d'un modèle, un
+groupe prend la place d'une personne de la même façon.
+
 ### Modèles de signature
 
 Un modèle garde des documents et des rôles (`Locataire`, `Bailleur`…) avec leurs champs. Une

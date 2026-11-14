@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Tano } from "../src/index.js";
+import { type SignerParams, Tano, type TemplateSignerParams } from "../src/index.js";
 import { requestSignature } from "../src/signature.js";
 
 const KEY = "tano_sandbox_abcd1234_k3y5ecr3tk3y5ecr3tk3y5ecr3tk3y5e";
@@ -308,6 +308,96 @@ describe("les modèles de signature", () => {
     await tano.signatureTemplates.createRequest("stpl_1", { signers: [personne] });
     expect(calls[1]?.url).toBe("https://api.tano.africa/v1/signature-requests");
     expect(bodyOf(calls[1])).toEqual({ signers: [personne], template_id: "stpl_1" });
+  });
+});
+
+describe("les groupes de signataires", () => {
+  const membres = [
+    { given_name: "Aya", family_name: "Koné", email: "aya@exemple.ci", auth_method: "otp_email" },
+    { given_name: "Awa", family_name: "Koné", phone: "+2250701021234", auth_method: "otp_sms" },
+  ] as const;
+
+  it("envoient une place tenue par un groupe, ses options de place comprises", async () => {
+    const { tano, calls } = client(json(201, { id: "sr_1", signers: [] }));
+    await tano.signatureRequests.create({
+      name: "Bail",
+      documents: [{ filename: "bail.pdf", content: "JVBERi0=" }],
+      signers: [
+        {
+          group_name: "Direction",
+          members: membres,
+          role: "signer",
+          position: 1,
+          fields: [
+            { document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 },
+          ],
+          hidden_documents: [],
+          delivery: "email",
+        },
+        {
+          given_name: "Koffi",
+          family_name: "Yao",
+          email: "koffi@exemple.ci",
+          auth_method: "otp_email",
+          position: 2,
+        },
+      ],
+    });
+    const [groupe, personne] = bodyOf(calls[0]).signers;
+    expect(groupe).toEqual({
+      group_name: "Direction",
+      members: membres,
+      role: "signer",
+      position: 1,
+      fields: [{ document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 }],
+      hidden_documents: [],
+      delivery: "email",
+    });
+    expect(personne.group_name).toBeUndefined();
+  });
+
+  it("remplacent une personne dans une demande tirée d'un modèle", async () => {
+    const { tano, calls } = client(json(201, { id: "sr_1", template_id: "stpl_1" }));
+    await tano.signatureTemplates.createRequest("stpl_1", {
+      signers: [{ group_name: "Direction", members: membres, delivery: "none" }],
+    });
+    expect(bodyOf(calls[0]).signers).toEqual([
+      { group_name: "Direction", members: membres, delivery: "none" },
+    ]);
+  });
+
+  it("ne mêlent pas une personne et un groupe sur la même place", () => {
+    const groupe: SignerParams = { group_name: "Direction", members: membres };
+    // @ts-expect-error une place de groupe ne porte pas de nom de personne
+    const mele: SignerParams = { ...groupe, given_name: "Aya" };
+    // @ts-expect-error ni de groupe sur une personne
+    const personne: TemplateSignerParams = {
+      given_name: "Aya",
+      family_name: "Koné",
+      auth_method: "otp_email",
+      members: membres,
+    };
+    expect([mele, personne]).toHaveLength(2);
+  });
+
+  it("rendent chaque membre, celui qui a signé et ceux qui sont libérés", async () => {
+    const direction = { id: "sgrp_1", name: "Direction" };
+    const { tano } = client(
+      json(200, {
+        id: "sr_1",
+        status: "completed",
+        signers: [
+          { id: "ss_1", status: "signed", contact: "a***@exemple.ci", group: direction },
+          { id: "ss_2", status: "released", contact: "+225******34", group: direction },
+          { id: "ss_3", status: "signed", contact: "k***@exemple.ci", group: null },
+        ],
+      }),
+    );
+    const demande = await tano.signatureRequests.retrieve("sr_1");
+    const liberes = demande.signers.filter((s) => s.status === "released");
+    expect(liberes.map((s) => s.id)).toEqual(["ss_2"]);
+    expect(liberes[0]?.group).toEqual(direction);
+    expect(demande.signers[2]?.group).toBeNull();
   });
 });
 

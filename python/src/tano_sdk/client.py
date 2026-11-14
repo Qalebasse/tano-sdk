@@ -27,7 +27,7 @@ from tano_sdk.esignature import (
 )
 from tano_sdk.signature import parse_key, request_signature
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 DEFAULT_BASE_URL = "https://api.tano.africa"
 _RETRYABLE = frozenset({429, 500, 502, 503, 504})
 

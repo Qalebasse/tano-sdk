@@ -10,7 +10,7 @@ import base64
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union
 from urllib.parse import quote
 
 if TYPE_CHECKING:
@@ -18,6 +18,56 @@ if TYPE_CHECKING:
 
 #: Un PDF : ses octets, ou déjà en base 64.
 PdfContent = Union[bytes, bytearray, memoryview, str]
+
+
+class _Identity(TypedDict):
+    given_name: str
+    family_name: str
+    #: `otp_email` ou `otp_sms`.
+    auth_method: str
+
+
+class GroupMember(_Identity, total=False):
+    """Un membre d'un groupe : invité avec son propre lien et son propre code."""
+
+    #: Pour `otp_email`.
+    email: str | None
+    #: Pour `otp_sms`, au format international (`+2250701021234`).
+    phone: str | None
+
+
+class _Slot(TypedDict, total=False):
+    """Ce qu'une place porte, qu'une personne ou un groupe la tienne."""
+
+    role: str
+    position: int
+    locale: str
+    time_zone: str
+    fields: list[dict[str, Any]]
+    hidden_documents: list[int]
+    delivery: str
+    custom_text: dict[str, str]
+    redirect_urls: dict[str, str]
+
+
+class PersonSigner(_Identity, _Slot, total=False):
+    """Une place tenue par une personne."""
+
+    email: str | None
+    phone: str | None
+
+
+class _Group(TypedDict):
+    #: De 1 à 60 caractères.
+    group_name: str
+    #: De 2 à 10 membres.
+    members: list[GroupMember]
+
+
+class GroupSigner(_Group, _Slot, total=False):
+    """Une place tenue par un groupe : ni nom, ni contact, ni moyen d'authentification sur la
+    place, ils sont sur chaque membre. Le premier membre qui signe tient la place, les autres
+    passent à `released` ; un membre qui refuse refuse la demande."""
 
 
 def to_base64(content: PdfContent) -> str:
@@ -93,10 +143,15 @@ class SignatureRequests:
         des ancres `{{s1|signature}}` dans le PDF — et ses `hidden_documents`, les indices des
         documents qu'il ne voit pas.
 
+        Une place peut être tenue par un groupe (`GroupSigner`) : `group_name` et `members` (de 2
+        à 10, chacun avec `given_name`, `family_name`, `email` ou `phone`, et `auth_method`) à la
+        place de la personne, le reste de la place inchangé. Le premier membre qui signe tient la
+        place ; les autres passent à `released`. Un membre qui refuse refuse la demande.
+
         `template_id` : la demande est tirée d'un modèle, qui en donne les documents, les rôles et
         leurs champs. `name` devient facultatif (le nom du modèle) et `documents` ne s'envoie
-        pas ; `signers` compte une personne par rôle, dans l'ordre des rôles, sans `fields` ni
-        `hidden_documents`.
+        pas ; `signers` compte une personne ou un groupe par rôle, dans l'ordre des rôles, sans
+        `fields` ni `hidden_documents`.
 
         `delivery` : `email` (Tano invite et relance) ou `none` (vous remettez le lien vous-même).
         `custom_text` : `invitation_subject`, `invitation_body`, `reminder_subject`,

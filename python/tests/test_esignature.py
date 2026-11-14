@@ -3,7 +3,15 @@ from __future__ import annotations
 import base64
 import json
 
-from tano_sdk import HttpRequest, HttpResponse, PdfFile, Tano
+from tano_sdk import (
+    GroupMember,
+    GroupSigner,
+    HttpRequest,
+    HttpResponse,
+    PdfFile,
+    PersonSigner,
+    Tano,
+)
 from tano_sdk.signature import request_signature
 
 KEY = "tano_sandbox_abcd1234_k3y5ecr3tk3y5ecr3tk3y5ecr3tk3y5e"
@@ -309,3 +317,90 @@ def test_request_from_template() -> None:
         "activate": False,
         "message": "Bonjour",
     }
+
+
+MEMBRES: list[GroupMember] = [
+    {
+        "given_name": "Aya",
+        "family_name": "Koné",
+        "email": "aya@exemple.ci",
+        "auth_method": "otp_email",
+    },
+    {
+        "given_name": "Awa",
+        "family_name": "Koné",
+        "phone": "+2250701021234",
+        "auth_method": "otp_sms",
+    },
+]
+
+
+def test_group_slot_is_sent_with_its_slot_options() -> None:
+    fake = Fake(reply(201, {"id": "sr_1", "signers": []}))
+    groupe: GroupSigner = {
+        "group_name": "Direction",
+        "members": MEMBRES,
+        "role": "signer",
+        "position": 1,
+        "fields": [
+            {
+                "document": 0,
+                "kind": "signature",
+                "page": 1,
+                "x": 60,
+                "y": 80,
+                "width": 170,
+                "height": 50,
+            }
+        ],
+        "hidden_documents": [],
+        "delivery": "email",
+    }
+    personne: PersonSigner = {
+        "given_name": "Koffi",
+        "family_name": "Yao",
+        "email": "koffi@exemple.ci",
+        "auth_method": "otp_email",
+        "position": 2,
+    }
+    signers: list[PersonSigner | GroupSigner] = [groupe, personne]
+    Tano(KEY, transport=fake).signature_requests.create(
+        name="Bail",
+        documents=[{"filename": "bail.pdf", "content": "JVBERi0="}],
+        signers=signers,
+    )
+    assert sent(fake.calls[0])["signers"] == [groupe, personne]
+
+
+def test_group_replaces_a_person_in_a_template_request() -> None:
+    fake = Fake(reply(201, {"id": "sr_1", "template_id": "stpl_1"}))
+    groupe: GroupSigner = {"group_name": "Direction", "members": MEMBRES, "delivery": "none"}
+    Tano(KEY, transport=fake).signature_templates.create_request("stpl_1", signers=[groupe])
+    assert sent(fake.calls[0]) == {
+        "template_id": "stpl_1",
+        "signers": [groupe],
+        "activate": False,
+    }
+
+
+def test_released_members_are_read() -> None:
+    direction = {"id": "sgrp_1", "name": "Direction"}
+    fake = Fake(
+        reply(
+            200,
+            {
+                "id": "sr_1",
+                "status": "completed",
+                "signers": [
+                    {"id": "ss_1", "status": "signed", "group": direction},
+                    {"id": "ss_2", "status": "released", "group": direction},
+                    {"id": "ss_3", "status": "signed", "group": None},
+                ],
+            },
+        )
+    )
+    demande = Tano(KEY, transport=fake).signature_requests.retrieve("sr_1")
+    liberes = [s for s in demande["signers"] if s["status"] == "released"]
+    assert [s["id"] for s in liberes] == ["ss_2"]
+    assert liberes[0]["group"] == direction
+    assert demande["signers"][2]["group"] is None
