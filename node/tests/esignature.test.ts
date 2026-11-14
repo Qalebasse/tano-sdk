@@ -176,6 +176,141 @@ describe("les demandes de signature", () => {
   });
 });
 
+describe("les modèles de signature", () => {
+  it("cachent des documents à un signataire", async () => {
+    const { tano, calls } = client(
+      json(201, {
+        id: "sr_1",
+        signers: [{ id: "ss_1", hidden_documents: ["sd_2"] }],
+      }),
+    );
+    const demande = await tano.signatureRequests.create({
+      name: "Bail",
+      documents: [
+        { filename: "bail.pdf", content: "JVBERi0=" },
+        { filename: "annexe.pdf", content: "JVBERi0=" },
+      ],
+      signers: [
+        {
+          given_name: "Aya",
+          family_name: "Koné",
+          email: "aya@exemple.ci",
+          auth_method: "otp_email",
+          hidden_documents: [1],
+        },
+      ],
+    });
+    expect(bodyOf(calls[0]).signers[0].hidden_documents).toEqual([1]);
+    expect(demande.signers[0]?.hidden_documents).toEqual(["sd_2"]);
+  });
+
+  it("s'enregistrent en POST signé, PDF en base 64, avec une clé d'idempotence", async () => {
+    const { tano, calls } = client(json(201, { id: "stpl_1", roles: [] }));
+    const pdf = Buffer.from("%PDF-1.7 bail");
+    const modele = await tano.signatureTemplates.create(
+      {
+        name: "Bail type",
+        documents: [{ filename: "bail.pdf", content: pdf }],
+        roles: [
+          {
+            label: "Locataire",
+            role: "signer",
+            fields: [
+              { document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 },
+            ],
+            hidden_documents: [],
+          },
+        ],
+        reminder_days: [3],
+      },
+      { idempotencyKey: "modele-bail-1" },
+    );
+
+    expect(modele.id).toBe("stpl_1");
+    const call = calls[0];
+    expect(call?.url).toBe("https://api.tano.africa/v1/signature-templates");
+    expect(call?.init.method).toBe("POST");
+    const body = bodyOf(call);
+    expect(body.documents).toEqual([{ filename: "bail.pdf", content: pdf.toString("base64") }]);
+    expect(body.roles[0].label).toBe("Locataire");
+    const h = headersOf(call);
+    expect(h["Idempotency-Key"]).toBe("modele-bail-1");
+    expect(h["X-Tano-Signature"]).toBe(
+      requestSignature(
+        SECRET,
+        h["X-Tano-Timestamp"] as string,
+        "POST",
+        "/v1/signature-templates",
+        call?.init.body as string,
+      ),
+    );
+  });
+
+  it("se listent, se lisent et se suppriment", async () => {
+    const { tano, calls } = client(
+      json(200, { data: [{ id: "stpl_1", name: "Bail type", documents: 2, roles: 1 }] }),
+      json(200, { id: "stpl_1", name: "Bail type" }),
+      new Response(null, { status: 204 }),
+    );
+    const { data } = await tano.signatureTemplates.list();
+    expect(data[0]?.documents).toBe(2);
+    expect(calls[0]?.url).toBe("https://api.tano.africa/v1/signature-templates");
+    expect(headersOf(calls[0])["X-Tano-Signature"]).toBeUndefined();
+    const modele = await tano.signatureTemplates.retrieve("stpl_1");
+    expect(modele.name).toBe("Bail type");
+    expect(calls[1]?.url).toBe("https://api.tano.africa/v1/signature-templates/stpl_1");
+    await tano.signatureTemplates.delete("stpl_1");
+    expect(calls[2]?.init.method).toBe("DELETE");
+    expect(calls[2]?.url).toBe("https://api.tano.africa/v1/signature-templates/stpl_1");
+    expect(headersOf(calls[2])["X-Tano-Signature"]).toMatch(/^v2=/);
+  });
+
+  it("donnent un de leurs PDF", async () => {
+    const { tano, calls } = client(
+      new Response(Buffer.from("%PDF modèle"), {
+        status: 200,
+        headers: { "content-type": "application/pdf", "x-tano-document-sha256": "cd34" },
+      }),
+    );
+    const fichier = await tano.signatureTemplates.document("stpl_1", "stdoc_1");
+    expect(calls[0]?.url).toBe(
+      "https://api.tano.africa/v1/signature-templates/stpl_1/documents/stdoc_1",
+    );
+    expect(fichier.data.toString()).toBe("%PDF modèle");
+    expect(fichier).toMatchObject({ sha256: "cd34", signed: null, sandbox: false });
+  });
+
+  it("donnent une demande, sans documents ni nom", async () => {
+    const { tano, calls } = client(
+      json(201, { id: "sr_1", template_id: "stpl_1" }),
+      json(201, { id: "sr_2", template_id: "stpl_1" }),
+    );
+    const personne = {
+      given_name: "Aya",
+      family_name: "Koné",
+      email: "aya@exemple.ci",
+      auth_method: "otp_email",
+    } as const;
+    const demande = await tano.signatureRequests.create({
+      template_id: "stpl_1",
+      signers: [personne],
+      reference: "BAIL-1",
+      activate: true,
+    });
+    expect(demande.template_id).toBe("stpl_1");
+    expect(calls[0]?.url).toBe("https://api.tano.africa/v1/signature-requests");
+    expect(bodyOf(calls[0])).toEqual({
+      template_id: "stpl_1",
+      signers: [personne],
+      reference: "BAIL-1",
+      activate: true,
+    });
+    await tano.signatureTemplates.createRequest("stpl_1", { signers: [personne] });
+    expect(calls[1]?.url).toBe("https://api.tano.africa/v1/signature-requests");
+    expect(bodyOf(calls[1])).toEqual({ signers: [personne], template_id: "stpl_1" });
+  });
+});
+
 describe("le cachet", () => {
   it("liste les profils et scelle un PDF en base 64", async () => {
     const { tano, calls } = client(

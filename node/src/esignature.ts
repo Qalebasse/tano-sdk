@@ -17,9 +17,13 @@ import type {
   SealProfile,
   SignatureRequest,
   SignatureRequestCreateParams,
+  SignatureRequestFromTemplateParams,
   SignatureRequestListParams,
   SignatureRequestSummary,
   SignatureRequestUpdateParams,
+  SignatureTemplate,
+  SignatureTemplateCreateParams,
+  SignatureTemplateSummary,
   SignerUpdateParams,
   SigningLink,
 } from "./types.js";
@@ -33,18 +37,22 @@ export function toBase64(content: PdfContent): string {
 export class SignatureRequests {
   constructor(private readonly client: Tano) {}
 
-  /** Créer une demande, et l'envoyer d'un geste avec `activate: true`. */
+  /** Créer une demande, et l'envoyer d'un geste avec `activate: true`. Avec `template_id`, les
+   * documents, les rôles et leurs champs viennent du modèle. */
   create(
-    params: SignatureRequestCreateParams,
+    params: SignatureRequestCreateParams | SignatureRequestFromTemplateParams,
     options?: RequestOptions,
   ): Promise<SignatureRequest> {
-    const body = {
-      ...params,
-      documents: params.documents.map((d) => ({
-        filename: d.filename,
-        content: toBase64(d.content),
-      })),
-    };
+    const body =
+      params.documents === undefined
+        ? params
+        : {
+            ...params,
+            documents: params.documents.map((d) => ({
+              filename: d.filename,
+              content: toBase64(d.content),
+            })),
+          };
     return this.client.request("POST", "/v1/signature-requests", body, options);
   }
 
@@ -180,6 +188,66 @@ export class SignatureRequests {
   /** Le fichier de preuve, une fois la demande complétée. */
   auditTrail(requestId: string, options?: RequestOptions): Promise<PdfFile> {
     return this.client.requestPdf(`/v1/signature-requests/${id(requestId)}/audit-trail`, options);
+  }
+}
+
+export class SignatureTemplates {
+  constructor(private readonly client: Tano) {}
+
+  /** Enregistrer un modèle : ses documents, et des rôles à la place des signataires. */
+  create(
+    params: SignatureTemplateCreateParams,
+    options?: RequestOptions,
+  ): Promise<SignatureTemplate> {
+    const body = {
+      ...params,
+      documents: params.documents.map((d) => ({
+        filename: d.filename,
+        content: toBase64(d.content),
+      })),
+    };
+    return this.client.request("POST", "/v1/signature-templates", body, options);
+  }
+
+  /** Les modèles de l'organisation, avec le nombre de leurs documents et de leurs rôles. */
+  list(options?: RequestOptions): Promise<{ readonly data: readonly SignatureTemplateSummary[] }> {
+    return this.client.request("GET", "/v1/signature-templates", undefined, options);
+  }
+
+  retrieve(templateId: string, options?: RequestOptions): Promise<SignatureTemplate> {
+    return this.client.request(
+      "GET",
+      `/v1/signature-templates/${id(templateId)}`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Supprimer un modèle. Les demandes déjà tirées gardent leurs documents. */
+  async delete(templateId: string, options?: RequestOptions): Promise<void> {
+    await this.client.request(
+      "DELETE",
+      `/v1/signature-templates/${id(templateId)}`,
+      undefined,
+      options,
+    );
+  }
+
+  /** Un PDF du modèle (`documents[].id`). */
+  document(templateId: string, documentId: string, options?: RequestOptions): Promise<PdfFile> {
+    return this.client.requestPdf(
+      `/v1/signature-templates/${id(templateId)}/documents/${id(documentId)}`,
+      options,
+    );
+  }
+
+  /** Créer une demande depuis ce modèle : `signatureRequests.create` avec `template_id`. */
+  createRequest(
+    templateId: string,
+    params: Omit<SignatureRequestFromTemplateParams, "template_id">,
+    options?: RequestOptions,
+  ): Promise<SignatureRequest> {
+    return this.client.signatureRequests.create({ ...params, template_id: templateId }, options);
   }
 }
 

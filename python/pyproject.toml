@@ -1,6 +1,6 @@
 [project]
 name = "tano-sdk"
-version = "0.2.0"
+version = "0.3.0"
 description = "Bibliothèque Python officielle de l'API Tano : vérification d'identité, signature et cachet électroniques, webhooks."
 readme = "README.md"
 keywords = ["tano", "kyc", "identity", "verification", "e-signature", "electronic-seal", "africa"]

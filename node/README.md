@@ -161,6 +161,60 @@ complète. La réponse rend `signers[].fields`, ceux des ancres compris. Une anc
 refusée avec `invalid_anchor`. Voir
 [Placer les champs](https://docs.tano.africa/signature-electronique/champs/).
 
+#### Cacher des documents à un signataire
+
+`signers[].hidden_documents` liste les indices (à partir de 0) des documents qu'un signataire ne
+voit pas. Un signataire ou un approbateur en voit au moins un ; une personne en copie peut ne rien
+voir. Aucun champ ne se pose sur un document caché (`invalid_field`). La réponse rend, pour chaque
+signataire, les identifiants (`sd_…`) de ses documents cachés.
+
+### Modèles de signature
+
+Un modèle garde des documents et des rôles (`Locataire`, `Bailleur`…) avec leurs champs. Une
+demande tirée d'un modèle ne porte plus que les personnes, une par rôle, dans l'ordre des rôles.
+
+| Méthode | Route | Notes |
+| --- | --- | --- |
+| `signatureTemplates.create(params, options?)` | `POST /v1/signature-templates` | Signée, idempotente. `name`, `documents`, `roles` (`label`, `role`, `position`, `fields`, `hidden_documents`) |
+| `signatureTemplates.list()` | `GET /v1/signature-templates` | `data` : `id`, `name`, nombre de `documents` et de `roles`, `updated_at` |
+| `signatureTemplates.retrieve(id)` | `GET /v1/signature-templates/{id}` | Documents, rôles et leurs champs |
+| `signatureTemplates.delete(id)` | `DELETE /v1/signature-templates/{id}` | Les demandes déjà tirées gardent leurs documents |
+| `signatureTemplates.document(id, documentId)` | `GET …/{id}/documents/{documentId}` | `PdfFile` : un PDF du modèle |
+| `signatureTemplates.createRequest(id, params)` | `POST /v1/signature-requests` | `signatureRequests.create` avec `template_id` |
+
+```ts
+const modele = await tano.signatureTemplates.create({
+  name: "Bail d'habitation",
+  documents: [{ filename: "bail.pdf", content: await readFile("bail.pdf") }],
+  roles: [
+    {
+      label: "Locataire",
+      role: "signer",
+      fields: [{ document: 0, kind: "signature", page: 1, x: 60, y: 80, width: 170, height: 50 }],
+    },
+  ],
+});
+
+// Ni documents ni champs : ils viennent du modèle. `name` vaut celui du modèle par défaut.
+const demande = await tano.signatureRequests.create({
+  template_id: modele.id,
+  reference: "BAIL-2026-119",
+  signers: [
+    {
+      given_name: "Aya",
+      family_name: "Koné",
+      email: "aya.kone@exemple.ci",
+      auth_method: "otp_email",
+    },
+  ],
+  activate: true,
+});
+```
+
+`ordering`, `expires_in_days`, `message` et `reminder_days` l'emportent sur le modèle s'ils sont
+envoyés. Un nombre de personnes qui ne correspond pas aux rôles est refusé (`invalid_request`, le
+message nomme les rôles) ; un modèle absent répond `signature_template_not_found`.
+
 ### Cachet électronique
 
 | Méthode | Route | Notes |

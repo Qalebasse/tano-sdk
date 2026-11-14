@@ -337,6 +337,9 @@ export interface SignerParams {
   /** Pour les heures calmes des relances. `Africa/Abidjan` par défaut. */
   time_zone?: string;
   fields?: readonly SignatureFieldParams[];
+  /** Les documents qu'il ne voit pas : leurs indices dans la demande, à partir de 0. Un
+   * signataire ou un approbateur en voit au moins un ; aucun champ sur un document caché. */
+  hidden_documents?: readonly number[];
   /** Celui de la demande par défaut. */
   delivery?: Delivery;
   /** Ses textes, qui l'emportent, clé par clé, sur ceux de la demande. */
@@ -369,11 +372,42 @@ export interface RedirectUrls {
 /** Un PDF à faire signer ou à sceller : ses octets, ou déjà en base 64. */
 export type PdfContent = Uint8Array | string;
 
-export interface SignatureRequestCreateParams {
+export interface SignatureRequestCreateParams extends SignatureRequestBaseParams {
   name: string;
   /** Les PDF : le SDK encode les octets en base 64. */
   documents: readonly { filename: string; content: PdfContent }[];
   signers: readonly SignerParams[];
+  template_id?: undefined;
+}
+
+/** Une demande tirée d'un modèle : ses documents, ses rôles et leurs champs viennent du modèle. */
+export interface SignatureRequestFromTemplateParams extends SignatureRequestBaseParams {
+  template_id: string;
+  /** Le nom du modèle par défaut. */
+  name?: string;
+  documents?: undefined;
+  /** Une personne par rôle, dans l'ordre des rôles du modèle. */
+  signers: readonly TemplateSignerParams[];
+}
+
+/** Une personne pour un rôle du modèle : son rang, son rôle et ses champs viennent du modèle. */
+export type TemplateSignerParams = Pick<
+  SignerParams,
+  | "given_name"
+  | "family_name"
+  | "email"
+  | "phone"
+  | "auth_method"
+  | "locale"
+  | "delivery"
+  | "custom_text"
+  | "redirect_urls"
+>;
+
+/** Ce qu'une demande accepte qu'elle vienne de vos documents ou d'un modèle. Pour une demande
+ * tirée d'un modèle, `ordering`, `expires_in_days`, `message` et `reminder_days` l'emportent sur
+ * le modèle seulement s'ils sont envoyés. */
+export interface SignatureRequestBaseParams {
   reference?: string;
   ordering?: "sequential" | "parallel";
   level?: "simple";
@@ -425,6 +459,8 @@ export interface SignatureRequestSigner {
   readonly fields?: readonly SignatureRequestField[];
   readonly delivery?: Delivery;
   readonly reminded_at?: string | null;
+  /** Les identifiants (`sd_…`) des documents qu'il ne voit pas. */
+  readonly hidden_documents?: readonly string[];
 }
 
 export interface SignatureRequest {
@@ -440,6 +476,8 @@ export interface SignatureRequest {
   readonly expires_at: string | null;
   readonly metadata?: Readonly<Record<string, string>>;
   readonly reactivated_at?: string | null;
+  /** Le modèle dont la demande est tirée. */
+  readonly template_id?: string | null;
   readonly documents: readonly {
     readonly id: string;
     readonly position: number;
@@ -498,6 +536,78 @@ export interface PdfFile {
   readonly signed: boolean | null;
   /** `X-Tano-Sandbox` : un spécimen de bac à sable, sans valeur. */
   readonly sandbox: boolean;
+}
+
+// ── Modèles de signature ────────────────────────────────────────────────────
+
+export type SignerRole = "signer" | "approver" | "viewer";
+
+/** Un rôle du modèle : la personne qui le tiendra est nommée à la création de la demande. */
+export interface SignatureTemplateRoleParams {
+  /** De 1 à 60 caractères, unique dans le modèle sans tenir compte de la casse. */
+  label: string;
+  /** `signer` par défaut. */
+  role?: SignerRole;
+  /** Son rang en ordre séquentiel, à partir de 1. */
+  position?: number;
+  fields?: readonly SignatureFieldParams[];
+  /** Les documents que ce rôle ne voit pas : leurs indices dans le modèle, à partir de 0. */
+  hidden_documents?: readonly number[];
+}
+
+export interface SignatureTemplateCreateParams {
+  name: string;
+  /** Les PDF : le SDK encode les octets en base 64. */
+  documents: readonly { filename: string; content: PdfContent }[];
+  roles: readonly SignatureTemplateRoleParams[];
+  ordering?: "sequential" | "parallel";
+  /** De 1 à 90. */
+  expires_in_days?: number;
+  message?: string;
+  /** Deux jours de relance au plus. */
+  reminder_days?: readonly number[];
+}
+
+/** Un champ d'un rôle, tel que le modèle le garde. */
+export type SignatureTemplateField = Readonly<SignatureFieldParams> & {
+  readonly required: boolean;
+};
+
+export interface SignatureTemplateRole {
+  readonly label: string;
+  readonly role: SignerRole;
+  readonly position: number;
+  /** Les indices des documents que ce rôle ne voit pas. */
+  readonly hidden_documents: readonly number[];
+  readonly fields: readonly SignatureTemplateField[];
+}
+
+export interface SignatureTemplate {
+  readonly id: string;
+  readonly name: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly ordering: "sequential" | "parallel";
+  readonly expires_in_days: number;
+  readonly message: string | null;
+  readonly reminder_days: readonly number[];
+  readonly documents: readonly {
+    readonly id: string;
+    readonly position: number;
+    readonly pages: number;
+    readonly sha256: string;
+  }[];
+  readonly roles: readonly SignatureTemplateRole[];
+}
+
+export interface SignatureTemplateSummary {
+  readonly id: string;
+  readonly name: string;
+  /** Le nombre de documents. */
+  readonly documents: number;
+  /** Le nombre de rôles. */
+  readonly roles: number;
+  readonly updated_at: string;
 }
 
 // ── Cachet électronique ─────────────────────────────────────────────────────

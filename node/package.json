@@ -1,6 +1,6 @@
 {
   "name": "@tano-africa/node",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Bibliothèque Node.js officielle de l'API Tano : vérification d'identité, signature et cachet électroniques, webhooks.",
   "license": "MIT",
   "type": "module",
